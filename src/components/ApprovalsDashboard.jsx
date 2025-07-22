@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { getRequests, saveRequest, getUsers, sendEmailNotification } from '../data/models';
+import { getRequests, saveRequest, getUsers } from '../data/models';
+import transporter from '../email';
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -62,13 +63,15 @@ const ApprovalsDashboard = () => {
       // Send email notification to requester
       const requester = users[requestToUpdate.userId];
       if (requester) {
-        sendEmailNotification(
-          requester.email,
-          `Your Petty Cash Request has been ${requestToUpdate.status}`,
-          `Your petty cash request for $${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
+        const mailOptions = {
+          from: process.env.SMTP_USER,
+          to: requester.email,
+          subject: `Your Petty Cash Request has been ${requestToUpdate.status}`,
+          text: `Your petty cash request for $${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
            
 ${action === 'approve' ? 'You may now collect the cash from the cashier. Please remember to upload the receipt after your purchase.' : 'If you have any questions, please contact the approver directly.'}`
-        );
+        };
+        transporter.sendMail(mailOptions);
       }
       
       // Show success message

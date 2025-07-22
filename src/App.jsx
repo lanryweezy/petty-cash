@@ -66,6 +66,8 @@ function App() {
         return <ChangePassword />;
       case 'logs':
         return <Logs />;
+      case 'reports':
+        return <Reports />;
       default:
         return <Dashboard />;
     }

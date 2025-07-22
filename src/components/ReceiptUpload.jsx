@@ -102,7 +102,7 @@ const ReceiptUpload = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
@@ -123,22 +123,32 @@ const ReceiptUpload = () => {
         throw new Error('Please enter a merchant name');
       }
       
-      // In a real app, we would upload the file to a storage service
-      // For this demo, we'll store a reference to the file name
-      const newReceipt = {
-        requestId: selectedRequestId,
-        fileName: receiptFile.name,
-        fileType: receiptFile.type,
-        fileSize: receiptFile.size,
-        uploadedBy: user.id,
-        amount: parseFloat(receiptData.amount),
-        merchant: receiptData.merchant.trim(),
-        notes: receiptData.notes.trim(),
-        // The saveReceipt function will add id and uploadedAt
-      };
-      
-      // Save the receipt
-      const savedReceipt = saveReceipt(newReceipt);
+      // Upload file to Supabase Storage
+      const fileExt = receiptFile.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, receiptFile);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Save receipt metadata to the database
+      const { data: receipt, error: receiptError } = await supabase
+        .from('receipts')
+        .insert({
+          request_id: selectedRequestId,
+          file_path: uploadData.path,
+          amount: parseFloat(receiptData.amount),
+          merchant: receiptData.merchant.trim(),
+          notes: receiptData.notes.trim(),
+          user_id: user.id,
+        });
+
+      if (receiptError) {
+        throw receiptError;
+      }
       
       // Notify relevant parties
       const selectedRequest = requests.find(r => r.id === selectedRequestId);
@@ -195,10 +205,28 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Get list of receipts already uploaded by this user (if not admin/cashier)
-  const userReceipts = receipts.filter(r => 
-    user.role === 'admin' || user.role === 'cashier' ? true : r.uploadedBy === user.id
-  );
+  const [userReceipts, setUserReceipts] = useState([]);
+
+  useEffect(() => {
+    const fetchReceipts = async () => {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select(`
+          *,
+          requests ( purpose, amount )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setErrorMessage(error.message);
+      } else {
+        setUserReceipts(data);
+      }
+    };
+
+    fetchReceipts();
+  }, [user]);
 
   return (
     <div>
@@ -402,41 +430,29 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {userReceipts.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)).map((receipt) => {
-                    // Find the associated request
-                    const request = getRequests().find(r => r.id === receipt.requestId);
-                    
-                    return (
-                      <tr key={receipt.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(receipt.uploadedAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {request ? request.purpose : 'Unknown'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ${receipt.amount.toFixed(2)}
-                          {request && receipt.amount !== request.amount && (
-                            <span className={`ml-2 text-xs ${receipt.amount > request.amount ? 'text-red-600' : 'text-green-600'}`}>
-                              {receipt.amount > request.amount ? '↑' : '↓'} 
-                              ${Math.abs(receipt.amount - request.amount).toFixed(2)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span className="truncate max-w-xs">{receipt.fileName}</span>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {formatFileSize(receipt.fileSize)}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {userReceipts.map((receipt) => (
+                    <tr key={receipt.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(receipt.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {receipt.requests.purpose}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${receipt.amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <a
+                          href={supabase.storage.from('receipts').getPublicUrl(receipt.file_path).data.publicUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View Receipt
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

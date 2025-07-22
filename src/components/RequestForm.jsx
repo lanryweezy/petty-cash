@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
-import { saveRequest, sendEmailNotification, getApprovalRules, getUsers } from '../data/models';
+import { saveRequest, getApprovalRules, getUsers } from '../data/models';
+import transporter from '../email';
 
 const RequestForm = () => {
   const { user } = useContext(AuthContext);
@@ -62,11 +63,11 @@ const RequestForm = () => {
             if (approver && !notifiedApprovers.includes(approver.id)) {
               notifiedApprovers.push(approver);
               
-              // Send email notification to approver (simulated)
-              sendEmailNotification(
-                approver.email,
-                `New Petty Cash Request: ${purpose}`,
-                `A new petty cash request has been submitted:
+              const mailOptions = {
+                from: process.env.SMTP_USER,
+                to: approver.email,
+                subject: `New Petty Cash Request: ${purpose}`,
+                text: `A new petty cash request has been submitted:
                  
 Requester: ${user.name}
 Amount: $${amountValue.toFixed(2)}
@@ -74,7 +75,8 @@ Purpose: ${purpose}
 Description: ${description}
 
 Please login to the Petty Cash system to approve or reject this request.`
-              );
+              };
+              transporter.sendMail(mailOptions);
             }
           }
         }
