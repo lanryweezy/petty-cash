@@ -8,7 +8,9 @@ import ReceiptUpload from './components/ReceiptUpload';
 import AdminPanel from './components/AdminPanel';
 import SMTPConfig from './components/SMTPConfig';
 import Login from './components/auth/Login';
-import { initializeData, getUsers } from './data/models';
+import ChangePassword from './components/auth/ChangePassword';
+import { initializeData } from './data/models';
+import { supabase } from './supabaseClient';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -23,16 +25,24 @@ function App() {
     // Initialize data on first load
     initializeData();
     setIsInitialized(true);
-    
-    // Auto-login as admin for demo purposes
-    const adminUser = getUsers().find(u => u.role === 'admin');
-    if (adminUser) {
-      setUser(adminUser);
-    }
+
+    const session = supabase.auth.session();
+    setUser(session?.user ?? null);
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Handle logout
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setActivePage('dashboard');
   };
@@ -52,6 +62,14 @@ function App() {
         return <AdminPanel />;
       case 'smtp':
         return <SMTPConfig />;
+      case 'change-password':
+        return <ChangePassword />;
+      case 'logs':
+        return <Logs />;
+      case 'reports':
+        return <Reports />;
+      case 'currencies':
+        return <Currencies />;
       default:
         return <Dashboard />;
     }

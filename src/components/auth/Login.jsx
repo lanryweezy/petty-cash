@@ -1,31 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { getUsers } from '../../data/models';
+import React, { useState } from 'react';
+import { supabase } from '../../supabaseClient';
 
 const Login = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [users, setUsers] = useState([]);
 
-  useEffect(() => {
-    const allUsers = getUsers();
-    setUsers(allUsers);
-  }, []);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Simple authentication (no real password verification in this demo)
-    const user = users.find(u => u.username === username);
-    
-    if (user) {
-      // In a real app, we'd verify the password here
-      // For demo purposes, any password is accepted
-      onLogin(user);
-    } else {
-      setError('Invalid username or password');
-      
-      // Clear error after a delay
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      onLogin(data.user);
+    } catch (error) {
+      setError(error.message);
       setTimeout(() => {
         setError('');
       }, 3000);
@@ -67,18 +58,18 @@ const Login = ({ onLogin }) => {
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
               </label>
               <div className="mt-1">
                 <input
-                  id="username"
-                  name="username"
-                  type="text"
+                  id="email"
+                  name="email"
+                  type="email"
                   required
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>

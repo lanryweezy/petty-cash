@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { getRequests, saveRequest, getUsers, sendEmailNotification } from '../data/models';
+import { CurrencyContext } from '../CurrencyContext';
+import { getRequests, saveRequest, getUsers } from '../data/models';
+import transporter from '../email';
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);
+  const { currency } = useContext(CurrencyContext);
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [filter, setFilter] = useState('pending');
@@ -62,13 +65,15 @@ const ApprovalsDashboard = () => {
       // Send email notification to requester
       const requester = users[requestToUpdate.userId];
       if (requester) {
-        sendEmailNotification(
-          requester.email,
-          `Your Petty Cash Request has been ${requestToUpdate.status}`,
-          `Your petty cash request for $${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
+        const mailOptions = {
+          from: process.env.SMTP_USER,
+          to: requester.email,
+          subject: `Your Petty Cash Request has been ${requestToUpdate.status}`,
+          text: `Your petty cash request for $${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
            
 ${action === 'approve' ? 'You may now collect the cash from the cashier. Please remember to upload the receipt after your purchase.' : 'If you have any questions, please contact the approver directly.'}`
-        );
+        };
+        transporter.sendMail(mailOptions);
       }
       
       // Show success message
@@ -213,7 +218,7 @@ ${action === 'approve' ? 'You may now collect the cash from the cashier. Please 
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${request.amount.toFixed(2)}
+                        {currency?.symbol}{request.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
