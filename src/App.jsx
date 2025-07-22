@@ -68,6 +68,8 @@ function App() {
         return <Logs />;
       case 'reports':
         return <Reports />;
+      case 'currencies':
+        return <Currencies />;
       default:
         return <Dashboard />;
     }

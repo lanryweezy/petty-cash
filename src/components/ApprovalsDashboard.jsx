@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
+import { CurrencyContext } from '../CurrencyContext';
 import { getRequests, saveRequest, getUsers } from '../data/models';
 import transporter from '../email';
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);
+  const { currency } = useContext(CurrencyContext);
   const [requests, setRequests] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [filter, setFilter] = useState('pending');
@@ -216,7 +218,7 @@ ${action === 'approve' ? 'You may now collect the cash from the cashier. Please 
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${request.amount.toFixed(2)}
+                        {currency?.symbol}{request.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

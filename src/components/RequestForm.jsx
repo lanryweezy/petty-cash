@@ -1,11 +1,13 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
+import { CurrencyContext } from '../CurrencyContext';
 import { saveRequest, getApprovalRules, getUsers } from '../data/models';
 import transporter from '../email';
 
 const RequestForm = () => {
   const { user } = useContext(AuthContext);
   const { setActivePage } = useContext(NavigationContext);
+  const { currency } = useContext(CurrencyContext);
   const [amount, setAmount] = useState('');
   const [purpose, setPurpose] = useState('');
   const [description, setDescription] = useState('');
@@ -138,19 +140,24 @@ Please login to the Petty Cash system to approve or reject this request.`
       <form onSubmit={handleSubmit} className="bg-white shadow-sm rounded-lg p-6">
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="amount">
-            Amount ($)
+            Amount ({currency?.symbol})
           </label>
-          <input
-            type="number"
-            id="amount"
-            step="0.01"
-            min="0.01"
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            placeholder="0.00"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">{currency?.symbol}</span>
+            </div>
+            <input
+              type="number"
+              id="amount"
+              step="0.01"
+              min="0.01"
+              className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </div>
         </div>
         
         <div className="mb-4">

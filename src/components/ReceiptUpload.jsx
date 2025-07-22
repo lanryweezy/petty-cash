@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
+import { CurrencyContext } from '../CurrencyContext';
 import { getRequests, getReceipts, saveReceipt, sendEmailNotification, getUsers } from '../data/models';
 
 const ReceiptUpload = () => {
   const { user } = useContext(AuthContext);
+  const { currency } = useContext(CurrencyContext);
   const [requests, setRequests] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState('');
@@ -293,7 +295,7 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                   <option value="">Select a request</option>
                   {requests.map(request => (
                     <option key={request.id} value={request.id}>
-                      {request.purpose} - ${request.amount.toFixed(2)}
+                      {request.purpose} - {currency?.symbol}{request.amount.toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -338,19 +340,24 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
               
               <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="amount">
-                  Receipt Amount
+                  Receipt Amount ({currency?.symbol})
                 </label>
-                <input
-                  type="number"
-                  id="amount"
-                  name="amount"
-                  step="0.01"
-                  className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                  placeholder="0.00"
-                  value={receiptData.amount}
-                  onChange={handleInputChange}
-                  required
-                />
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">{currency?.symbol}</span>
+                  </div>
+                  <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    step="0.01"
+                    className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
+                    placeholder="0.00"
+                    value={receiptData.amount}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
               </div>
               
               <div className="mb-4">
@@ -439,7 +446,7 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                         {receipt.requests.purpose}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${receipt.amount.toFixed(2)}
+                        {currency?.symbol}{receipt.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <a

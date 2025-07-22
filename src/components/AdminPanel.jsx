@@ -364,219 +364,70 @@ const AdminPanel = () => {
     );
   };
 
-  // Render approval rules tab
-  const renderApprovalRulesTab = () => {
-    const approvers = users.filter(u => u.role === 'approver');
-    
+  const renderSettingsTab = () => {
+    const [currencies, setCurrencies] = useState([]);
+    const [defaultCurrency, setDefaultCurrency] = useState('');
+
+    useEffect(() => {
+      const fetchCurrencies = async () => {
+        const { data, error } = await supabase.from('currencies').select('*');
+        if (error) {
+          setErrorMessage(error.message);
+        } else {
+          setCurrencies(data);
+          const defaultCurrency = data.find((c) => c.is_default);
+          if (defaultCurrency) {
+            setDefaultCurrency(defaultCurrency.id);
+          }
+        }
+      };
+      fetchCurrencies();
+    }, []);
+
+    const handleSaveSettings = async () => {
+      try {
+        await supabase
+          .from('currencies')
+          .update({ is_default: false })
+          .eq('is_default', true);
+        await supabase
+          .from('currencies')
+          .update({ is_default: true })
+          .eq('id', defaultCurrency);
+        setSuccessMessage('Settings saved successfully');
+      } catch (error) {
+        setErrorMessage(error.message);
+      }
+    };
+
     return (
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-medium text-gray-900">Approval Rules</h2>
-          <button
-            onClick={handleAddRule}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-            disabled={approvers.length === 0}
-            title={approvers.length === 0 ? 'Add approver users first' : ''}
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Settings</h2>
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="defaultCurrency">
+            Default Currency
+          </label>
+          <select
+            id="defaultCurrency"
+            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            value={defaultCurrency}
+            onChange={(e) => setDefaultCurrency(e.target.value)}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Rule
+            {currencies.map((currency) => (
+              <option key={currency.id} value={currency.id}>
+                {currency.name} ({currency.code})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveSettings}
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Save Settings
           </button>
         </div>
-        
-        {approvers.length === 0 ? (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  You need to add users with the "Approver" role before creating approval rules.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Approver
-                    </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount Threshold
-                    </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {rules.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
-                        No approval rules configured yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    rules.map((rule) => {
-                      const approver = users.find(u => u.id === rule.approverId);
-                      return (
-                        <tr key={rule.id}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {approver ? approver.name : 'Unknown Approver'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {rule.approveAll ? 'All amounts' : `Up to $${rule.amountThreshold.toFixed(2)}`}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              rule.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {rule.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <button
-                              onClick={() => handleEditRule(rule.id)}
-                              className="text-indigo-600 hover:text-indigo-900 mr-4"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-        
-        {/* Rule Edit Modal */}
-        {editingRule && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingRule.id ? 'Edit Rule' : 'Add New Rule'}
-              </h3>
-              
-              <form onSubmit={handleSaveRule}>
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="approverId">
-                    Approver
-                  </label>
-                  <select
-                    id="approverId"
-                    name="approverId"
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    value={editingRule.approverId}
-                    onChange={handleRuleChange}
-                    required
-                  >
-                    <option value="">Select an approver</option>
-                    {approvers.map(approver => (
-                      <option key={approver.id} value={approver.id}>
-                        {approver.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="mb-4">
-                  <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        id="approveAll"
-                        name="approveAll"
-                        type="checkbox"
-                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        checked={editingRule.approveAll}
-                        onChange={handleRuleChange}
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="approveAll" className="font-medium text-gray-700">
-                        Approve all amounts
-                      </label>
-                      <p className="text-gray-500">If checked, the approver can approve requests of any amount.</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {!editingRule.approveAll && (
-                  <div className="mb-4">
-                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="amountThreshold">
-                      Amount Threshold ($)
-                    </label>
-                    <input
-                      type="number"
-                      id="amountThreshold"
-                      name="amountThreshold"
-                      step="0.01"
-                      min="0.01"
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      placeholder="Maximum amount this approver can approve"
-                      value={editingRule.amountThreshold}
-                      onChange={handleRuleChange}
-                      required={!editingRule.approveAll}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      The approver will only be able to approve requests up to this amount.
-                    </p>
-                  </div>
-                )}
-                
-                <div className="mb-6">
-                  <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        id="isActive"
-                        name="isActive"
-                        type="checkbox"
-                        className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                        checked={editingRule.isActive}
-                        onChange={handleRuleChange}
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="isActive" className="font-medium text-gray-700">
-                        Active
-                      </label>
-                      <p className="text-gray-500">If unchecked, this rule will be ignored when determining approvers.</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setEditingRule(null)}
-                    className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Save
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     );
   };

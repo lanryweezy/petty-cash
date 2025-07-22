@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { supabase } from '../supabaseClient';
+import { CurrencyContext } from '../CurrencyContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Reports = () => {
+  const { currency } = useContext(CurrencyContext);
   const [spendingByCategory, setSpendingByCategory] = useState([]);
   const [spendingByUser, setSpendingByUser] = useState([]);
   const [error, setError] = useState('');
@@ -71,8 +73,8 @@ const Reports = () => {
           <BarChart data={spendingByCategory}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(value) => `${currency?.symbol}${value}`} />
+            <Tooltip formatter={(value) => `${currency?.symbol}${value.toFixed(2)}`} />
             <Legend />
             <Bar dataKey="amount" fill="#8884d8" />
           </BarChart>
@@ -85,8 +87,8 @@ const Reports = () => {
           <BarChart data={spendingByUser}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <YAxis tickFormatter={(value) => `${currency?.symbol}${value}`} />
+            <Tooltip formatter={(value) => `${currency?.symbol}${value.toFixed(2)}`} />
             <Legend />
             <Bar dataKey="amount" fill="#82ca9d" />
           </BarChart>
