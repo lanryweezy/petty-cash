@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { getUsers, saveUser, getApprovalRules, saveApprovalRule } from '../data/models';
+import { supabase } from '../../supabaseClient';
+import { getApprovalRules, saveApprovalRule } from '../data/models';
 
 const AdminPanel = () => {
   const { user } = useContext(AuthContext);
@@ -17,10 +18,14 @@ const AdminPanel = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const allUsers = getUsers();
-    setUsers(allUsers);
-    
+  const loadData = async () => {
+    const { data: users, error } = await supabase.from('users').select('*');
+    if (error) {
+      setErrorMessage(error.message);
+    } else {
+      setUsers(users);
+    }
+
     const allRules = getApprovalRules();
     setRules(allRules);
   };
@@ -30,64 +35,70 @@ const AdminPanel = () => {
     const { name, value } = e.target;
     setEditingUser({
       ...editingUser,
-      [name]: value
+      [name]: value,
     });
   };
 
   const handleAddUser = () => {
     setEditingUser({
       name: '',
-      username: '',
       email: '',
-      role: 'user'
+      password: '',
+      role: 'user',
     });
   };
 
   const handleEditUser = (userId) => {
-    const userToEdit = users.find(u => u.id === userId);
+    const userToEdit = users.find((u) => u.id === userId);
     if (userToEdit) {
       setEditingUser({ ...userToEdit });
     }
   };
 
-  const handleSaveUser = (e) => {
+  const handleSaveUser = async (e) => {
     e.preventDefault();
-    
+
     try {
-      // Validate form
-      if (!editingUser.name.trim()) {
-        throw new Error('Name is required');
+      if (editingUser.id) {
+        // Update user
+        const { error } = await supabase
+          .from('users')
+          .update({
+            name: editingUser.name,
+            role: editingUser.role,
+          })
+          .eq('id', editingUser.id);
+        if (error) throw error;
+        await supabase.from('logs').insert({ message: `updated user ${editingUser.email}`, user_id: user.id });
+        setSuccessMessage(`User ${editingUser.name} updated successfully`);
+      } else {
+        // Create user
+        const { data, error } = await supabase.auth.signUp({
+          email: editingUser.email,
+          password: editingUser.password,
+          options: {
+            data: {
+              name: editingUser.name,
+              role: editingUser.role,
+            },
+          },
+        });
+        if (error) throw error;
+        await supabase.from('logs').insert({ message: `created user ${data.user.email}`, user_id: user.id });
+        setSuccessMessage(`User ${data.user.email} created successfully`);
       }
-      
-      if (!editingUser.username.trim()) {
-        throw new Error('Username is required');
-      }
-      
-      if (!editingUser.email.trim()) {
-        throw new Error('Email is required');
-      }
-      
-      if (!editingUser.role) {
-        throw new Error('Role is required');
-      }
-      
-      // Save user
-      const savedUser = saveUser(editingUser);
-      
-      // Show success message
-      setSuccessMessage(`User ${savedUser.name} saved successfully`);
-      
+
       // Reset form and refresh data
       setEditingUser(null);
       loadData();
-      
+
       // Clear success message after a delay
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
     } catch (error) {
       setErrorMessage(error.message);
-      
+
       // Clear error message after a delay
       setTimeout(() => {
         setErrorMessage('');
@@ -277,21 +288,23 @@ const AdminPanel = () => {
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="username">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    placeholder="Username"
-                    value={editingUser.username}
-                    onChange={handleUserChange}
-                    required
-                  />
-                </div>
+                {!editingUser.id && (
+                  <div className="mb-4">
+                    <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="password">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      placeholder="Password"
+                      value={editingUser.password}
+                      onChange={handleUserChange}
+                      required
+                    />
+                  </div>
+                )}
                 
                 <div className="mb-4">
                   <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
