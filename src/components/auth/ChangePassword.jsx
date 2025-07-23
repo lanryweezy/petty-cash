@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import { changePassword } from '../../data/models';
 
 const ChangePassword = () => {
   const [password, setPassword] = useState('');
@@ -9,9 +9,7 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      await supabase.from('logs').insert({ message: 'updated password', user_id: data.user.id });
+      await changePassword(password);
       setSuccess('Password updated successfully!');
     } catch (error) {
       setError(error.message);

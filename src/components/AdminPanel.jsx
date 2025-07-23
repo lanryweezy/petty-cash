@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { supabase } from '../../supabaseClient';
-import { getApprovalRules, saveApprovalRule } from '../data/models';
+import { getUsers, saveUser, getApprovalRules, saveApprovalRule, getRoles } from '../data/models';
 
 const AdminPanel = () => {
   const { user } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [rules, setRules] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -19,14 +21,13 @@ const AdminPanel = () => {
   }, []);
 
   const loadData = async () => {
-    const { data: users, error } = await supabase.from('users').select('*');
-    if (error) {
-      setErrorMessage(error.message);
-    } else {
-      setUsers(users);
-    }
+    const users = await getUsers();
+    setUsers(users);
 
-    const allRules = getApprovalRules();
+    const roles = await getRoles();
+    setRoles(roles);
+
+    const allRules = await getApprovalRules();
     setRules(allRules);
   };
 
@@ -59,36 +60,8 @@ const AdminPanel = () => {
     e.preventDefault();
 
     try {
-      if (editingUser.id) {
-        // Update user
-        const { error } = await supabase
-          .from('users')
-          .update({
-            name: editingUser.name,
-            role: editingUser.role,
-          })
-          .eq('id', editingUser.id);
-        if (error) throw error;
-        await supabase.from('logs').insert({ message: `updated user ${editingUser.email}`, user_id: user.id });
-        setSuccessMessage(`User ${editingUser.name} updated successfully`);
-      } else {
-        // Create user
-        const { data, error } = await supabase.auth.signUp({
-          email: editingUser.email,
-          password: editingUser.password,
-          options: {
-            data: {
-              name: editingUser.name,
-              role: editingUser.role,
-            },
-          },
-        });
-        if (error) throw error;
-        await supabase.from('logs').insert({ message: `created user ${data.user.email}`, user_id: user.id });
-        setSuccessMessage(`User ${data.user.email} created successfully`);
-      }
-
-      // Reset form and refresh data
+      await saveUser(editingUser);
+      setSuccessMessage(`User ${editingUser.name} saved successfully`);
       setEditingUser(null);
       loadData();
 
@@ -188,19 +161,33 @@ const AdminPanel = () => {
 
   // Render user management tab
   const renderUsersTab = () => {
+    const filteredUsers = users.filter(user =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-gray-900">User Management</h2>
-          <button
-            onClick={handleAddUser}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add User
-          </button>
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="border p-2 rounded-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button
+              onClick={handleAddUser}
+              className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add User
+            </button>
+          </div>
         </div>
         
         {/* User List */}
@@ -227,7 +214,7 @@ const AdminPanel = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.name}
@@ -239,14 +226,7 @@ const AdminPanel = () => {
                       {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'approver' ? 'bg-blue-100 text-blue-800' :
-                        user.role === 'cashier' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.role}
-                      </span>
+                      {user.roles?.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button
@@ -323,21 +303,22 @@ const AdminPanel = () => {
                 </div>
                 
                 <div className="mb-6">
-                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="role">
+                  <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="role_id">
                     Role
                   </label>
                   <select
-                    id="role"
-                    name="role"
+                    id="role_id"
+                    name="role_id"
                     className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                    value={editingUser.role}
+                    value={editingUser.role_id}
                     onChange={handleUserChange}
                     required
                   >
-                    <option value="admin">Admin</option>
-                    <option value="approver">Approver</option>
-                    <option value="cashier">Cashier</option>
-                    <option value="user">Regular User</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { getCurrencies, saveCurrency, setDefaultCurrency } from '../data/models';
 
 const Currencies = () => {
   const [currencies, setCurrencies] = useState([]);
@@ -12,12 +12,8 @@ const Currencies = () => {
   }, []);
 
   const fetchCurrencies = async () => {
-    const { data, error } = await supabase.from('currencies').select('*');
-    if (error) {
-      setError(error.message);
-    } else {
-      setCurrencies(data);
-    }
+    const currencies = await getCurrencies();
+    setCurrencies(currencies);
   };
 
   const handleEdit = (currency) => {
@@ -30,36 +26,30 @@ const Currencies = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const { id, name, code, exchange_rate, is_default } = editingCurrency;
-    const { error } = await supabase
-      .from('currencies')
-      .update({ name, code, exchange_rate, is_default })
-      .eq('id', id);
-    if (error) {
-      setError(error.message);
-    } else {
+    try {
+      await saveCurrency(editingCurrency);
       setSuccess('Currency saved successfully!');
       setEditingCurrency(null);
       fetchCurrencies();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     const { name, code, exchange_rate } = e.target.elements;
-    const { error } = await supabase
-      .from('currencies')
-      .insert({
+    try {
+      await saveCurrency({
         name: name.value,
         code: code.value,
         exchange_rate: exchange_rate.value,
       });
-    if (error) {
-      setError(error.message);
-    } else {
       setSuccess('Currency added successfully!');
       fetchCurrencies();
       e.target.reset();
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -128,15 +118,12 @@ const Currencies = () => {
                     name="is_default"
                     checked={currency.is_default}
                     onChange={async () => {
-                      await supabase
-                        .from('currencies')
-                        .update({ is_default: false })
-                        .eq('is_default', true);
-                      await supabase
-                        .from('currencies')
-                        .update({ is_default: true })
-                        .eq('id', currency.id);
-                      fetchCurrencies();
+                      try {
+                        await setDefaultCurrency(currency.id);
+                        fetchCurrencies();
+                      } catch (err) {
+                        setError(err.message);
+                      }
                     }}
                   />
                 </td>

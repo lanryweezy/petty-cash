@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { supabase } from '../supabaseClient';
+import { getReceipts, getUsers } from '../data/models';
 import { CurrencyContext } from '../CurrencyContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -10,16 +10,13 @@ const Reports = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchSpendingByCategory = async () => {
-      const { data, error } = await supabase
-        .from('receipts')
-        .select('*, requests(purpose)')
-        .order('created_at', { ascending: false });
+    const fetchData = async () => {
+      try {
+        const receipts = await getReceipts();
+        const users = await getUsers();
 
-      if (error) {
-        setError(error.message);
-      } else {
-        const spending = data.reduce((acc, receipt) => {
+        // Spending by category
+        const byCategory = receipts.reduce((acc, receipt) => {
           const category = receipt.requests.purpose;
           const amount = receipt.amount;
           const existingCategory = acc.find((item) => item.name === category);
@@ -30,36 +27,29 @@ const Reports = () => {
           }
           return acc;
         }, []);
-        setSpendingByCategory(spending);
-      }
-    };
+        setSpendingByCategory(byCategory);
 
-    const fetchSpendingByUser = async () => {
-      const { data, error } = await supabase
-        .from('receipts')
-        .select('*, users(email)')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setError(error.message);
-      } else {
-        const spending = data.reduce((acc, receipt) => {
-          const user = receipt.users.email;
+        // Spending by user
+        const byUser = receipts.reduce((acc, receipt) => {
+          const user = users.find(u => u.id === receipt.user_id)?.email;
           const amount = receipt.amount;
-          const existingUser = acc.find((item) => item.name === user);
-          if (existingUser) {
-            existingUser.amount += amount;
-          } else {
-            acc.push({ name: user, amount });
+          if (user) {
+            const existingUser = acc.find((item) => item.name === user);
+            if (existingUser) {
+              existingUser.amount += amount;
+            } else {
+              acc.push({ name: user, amount });
+            }
           }
           return acc;
         }, []);
-        setSpendingByUser(spending);
+        setSpendingByUser(byUser);
+      } catch (err) {
+        setError(err.message);
       }
     };
 
-    fetchSpendingByCategory();
-    fetchSpendingByUser();
+    fetchData();
   }, []);
 
   return (

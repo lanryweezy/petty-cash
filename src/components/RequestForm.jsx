@@ -65,20 +65,20 @@ const RequestForm = () => {
             if (approver && !notifiedApprovers.includes(approver.id)) {
               notifiedApprovers.push(approver);
               
-              const mailOptions = {
-                from: process.env.SMTP_USER,
-                to: approver.email,
-                subject: `New Petty Cash Request: ${purpose}`,
-                text: `A new petty cash request has been submitted:
-                 
+              await supabase.functions.invoke('send-email', {
+                body: {
+                  to: approver.email,
+                  subject: `New Petty Cash Request: ${purpose}`,
+                  text: `A new petty cash request has been submitted:
+
 Requester: ${user.name}
 Amount: $${amountValue.toFixed(2)}
 Purpose: ${purpose}
 Description: ${description}
 
 Please login to the Petty Cash system to approve or reject this request.`
-              };
-              transporter.sendMail(mailOptions);
+                }
+              })
             }
           }
         }

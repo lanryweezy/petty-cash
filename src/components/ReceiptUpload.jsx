@@ -18,32 +18,33 @@ const ReceiptUpload = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [pendingReceipts, setPendingReceipts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadData();
   }, [user]);
 
-  const loadData = () => {
+  const loadData = async () => {
     // Load all approved requests that need receipts
-    const allRequests = getRequests();
-    const allReceipts = getReceipts();
+    const allRequests = await getRequests();
+    const allReceipts = await getReceipts();
     setReceipts(allReceipts);
     
     // Filter requests based on user role and receipt status
     let filteredRequests;
-    if (user.role === 'admin' || user.role === 'cashier') {
+    if (user.roles.name === 'admin' || user.roles.name === 'cashier') {
       // Admins and cashiers can see all approved requests
       filteredRequests = allRequests.filter(r => r.status === 'approved');
     } else {
       // Regular users can only see their own approved requests
       filteredRequests = allRequests.filter(r => 
-        r.status === 'approved' && r.userId === user.id
+        r.status === 'approved' && r.user_id === user.id
       );
     }
     
     // Filter out requests that already have receipts
     const requestsNeedingReceipts = filteredRequests.filter(request => 
-      !allReceipts.some(receipt => receipt.requestId === request.id)
+      !allReceipts.some(receipt => receipt.request_id === request.id)
     );
     
     setRequests(requestsNeedingReceipts);
@@ -59,6 +60,13 @@ const ReceiptUpload = () => {
         return;
       }
       
+      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrorMessage('Invalid file type. Please upload a JPG, PNG, or PDF file.');
+        e.target.value = null;
+        return;
+      }
+
       setReceiptFile(file);
       
       // In a real app, we might use OCR to extract information
@@ -125,47 +133,33 @@ const ReceiptUpload = () => {
         throw new Error('Please enter a merchant name');
       }
       
-      // Upload file to Supabase Storage
-      const fileExt = receiptFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, receiptFile);
+      // In a real app, we would upload the file to a storage service
+      // For this demo, we'll just save the file name
+      const newReceipt = {
+        requestId: selectedRequestId,
+        filePath: receiptFile.name,
+        amount: parseFloat(receiptData.amount),
+        merchant: receiptData.merchant.trim(),
+        notes: receiptData.notes.trim(),
+        userId: user.id,
+      };
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Save receipt metadata to the database
-      const { data: receipt, error: receiptError } = await supabase
-        .from('receipts')
-        .insert({
-          request_id: selectedRequestId,
-          file_path: uploadData.path,
-          amount: parseFloat(receiptData.amount),
-          merchant: receiptData.merchant.trim(),
-          notes: receiptData.notes.trim(),
-          user_id: user.id,
-        });
-
-      if (receiptError) {
-        throw receiptError;
-      }
+      await saveReceipt(newReceipt);
       
       // Notify relevant parties
       const selectedRequest = requests.find(r => r.id === selectedRequestId);
-      const users = getUsers();
-      const approver = users.find(u => u.id === selectedRequest?.approvedBy);
+      const users = await getUsers();
+      const approver = users.find(u => u.id === selectedRequest?.approved_by);
       
       if (approver) {
-        sendEmailNotification(
+        await sendEmailNotification(
           approver.email,
           'Receipt Uploaded for Approved Request',
           `A receipt has been uploaded for the approved request:
            
 Request: ${selectedRequest.purpose}
-Amount Requested: $${selectedRequest.amount.toFixed(2)}
-Receipt Amount: $${parseFloat(receiptData.amount).toFixed(2)}
+Amount Requested: ${currency?.symbol}${selectedRequest.amount.toFixed(2)}
+Receipt Amount: ${currency?.symbol}${parseFloat(receiptData.amount).toFixed(2)}
 Merchant: ${receiptData.merchant}
 Uploaded by: ${user.name}
 
@@ -211,24 +205,18 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
 
   useEffect(() => {
     const fetchReceipts = async () => {
-      const { data, error } = await supabase
-        .from('receipts')
-        .select(`
-          *,
-          requests ( purpose, amount )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setErrorMessage(error.message);
-      } else {
-        setUserReceipts(data);
+      const receipts = await getReceipts();
+      let filteredReceipts = receipts;
+      if (searchTerm) {
+        filteredReceipts = filteredReceipts.filter(r =>
+          r.requests.purpose.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       }
+      setUserReceipts(filteredReceipts);
     };
 
     fetchReceipts();
-  }, [user]);
+  }, [user, searchTerm]);
 
   return (
     <div>
@@ -405,7 +393,16 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
         
         {/* Receipts List */}
         <div className="bg-white shadow-sm rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Uploaded Receipts</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900">Uploaded Receipts</h2>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="border p-2 rounded-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           
           {userReceipts.length === 0 ? (
             <div className="text-center py-6">
@@ -449,14 +446,7 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                         {currency?.symbol}{receipt.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <a
-                          href={supabase.storage.from('receipts').getPublicUrl(receipt.file_path).data.publicUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          View Receipt
-                        </a>
+                        {receipt.file_path}
                       </td>
                     </tr>
                   ))}

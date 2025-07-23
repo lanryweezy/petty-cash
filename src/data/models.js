@@ -1,336 +1,121 @@
-import { v4 as uuidv4 } from 'uuid';
+const API_URL = process.env.REACT_APP_API_URL;
 
-// Local storage keys
-const USERS_KEY = 'pettycash_users';
-const REQUESTS_KEY = 'pettycash_requests';
-const RECEIPTS_KEY = 'pettycash_receipts';
-const APPROVAL_RULES_KEY = 'pettycash_approval_rules';
-const SMTP_CONFIG_KEY = 'pettycash_smtp_config';
-
-// Initialize data in localStorage if not exists
-export const initializeData = () => {
-  // Initialize users if not exists
-  if (!localStorage.getItem(USERS_KEY)) {
-    const defaultUsers = [
-      {
-        id: uuidv4(),
-        name: 'Admin User',
-        username: 'admin',
-        email: 'admin@example.com',
-        role: 'admin',
-      },
-      {
-        id: uuidv4(),
-        name: 'Approver User',
-        username: 'approver',
-        email: 'approver@example.com',
-        role: 'approver',
-      },
-      {
-        id: uuidv4(),
-        name: 'Cashier User',
-        username: 'cashier',
-        email: 'cashier@example.com',
-        role: 'cashier',
-      },
-      {
-        id: uuidv4(),
-        name: 'Regular User',
-        username: 'user',
-        email: 'user@example.com',
-        role: 'user',
-      }
-    ];
-    localStorage.setItem(USERS_KEY, JSON.stringify(defaultUsers));
-  }
-
-  // Initialize requests if not exists
-  if (!localStorage.getItem(REQUESTS_KEY)) {
-    const users = getUsers();
-    const adminId = users.find(u => u.username === 'admin')?.id;
-    const approverId = users.find(u => u.username === 'approver')?.id;
-    const userId = users.find(u => u.username === 'user')?.id;
-    
-    const defaultRequests = [];
-    
-    if (adminId && approverId && userId) {
-      // Generate some sample requests
-      const now = new Date();
-      const threeDaysAgo = new Date(now);
-      threeDaysAgo.setDate(now.getDate() - 3);
-      
-      const fiveDaysAgo = new Date(now);
-      fiveDaysAgo.setDate(now.getDate() - 5);
-      
-      const sevenDaysAgo = new Date(now);
-      sevenDaysAgo.setDate(now.getDate() - 7);
-      
-      const tenDaysAgo = new Date(now);
-      tenDaysAgo.setDate(now.getDate() - 10);
-      
-      defaultRequests.push(
-        {
-          id: uuidv4(),
-          userId: userId,
-          requesterName: 'Regular User',
-          amount: 75.50,
-          purpose: 'Office supplies',
-          description: 'Paper, pens, and notebooks',
-          status: 'approved',
-          createdAt: sevenDaysAgo.toISOString(),
-          approvedBy: approverId,
-          approvedAt: fiveDaysAgo.toISOString()
-        },
-        {
-          id: uuidv4(),
-          userId: adminId,
-          requesterName: 'Admin User',
-          amount: 120.00,
-          purpose: 'Team lunch',
-          description: 'Monthly team lunch meeting',
-          status: 'approved',
-          createdAt: tenDaysAgo.toISOString(),
-          approvedBy: approverId,
-          approvedAt: sevenDaysAgo.toISOString()
-        },
-        {
-          id: uuidv4(),
-          userId: userId,
-          requesterName: 'Regular User',
-          amount: 250.00,
-          purpose: 'Software subscription',
-          description: 'Annual subscription for productivity tools',
-          status: 'pending',
-          createdAt: threeDaysAgo.toISOString()
-        },
-        {
-          id: uuidv4(),
-          userId: adminId,
-          requesterName: 'Admin User',
-          amount: 45.00,
-          purpose: 'Parking fees',
-          description: 'Parking fees for client meeting',
-          status: 'rejected',
-          createdAt: fiveDaysAgo.toISOString(),
-          approvedBy: approverId,
-          approvedAt: threeDaysAgo.toISOString()
-        }
-      );
-    }
-    
-    localStorage.setItem(REQUESTS_KEY, JSON.stringify(defaultRequests));
-  }
-
-  // Initialize receipts if not exists
-  if (!localStorage.getItem(RECEIPTS_KEY)) {
-    const requests = getRequests();
-    const approvedRequests = requests.filter(r => r.status === 'approved');
-    
-    if (approvedRequests.length > 0) {
-      // Create a receipt for the first approved request
-      const users = getUsers();
-      const cashierId = users.find(u => u.username === 'cashier')?.id;
-      
-      const defaultReceipts = [
-        {
-          id: uuidv4(),
-          requestId: approvedRequests[0].id,
-          fileName: '/images/receipt.jpg',
-          fileType: 'image/jpeg',
-          fileSize: 245000,
-          uploadedBy: cashierId || approvedRequests[0].userId,
-          uploadedAt: new Date().toISOString(),
-          amount: approvedRequests[0].amount,
-          merchant: 'Office Depot',
-          notes: 'Original receipt'
-        }
-      ];
-      
-      localStorage.setItem(RECEIPTS_KEY, JSON.stringify(defaultReceipts));
-    } else {
-      localStorage.setItem(RECEIPTS_KEY, JSON.stringify([]));
-    }
-  }
-
-  // Initialize approval rules if not exists
-  if (!localStorage.getItem(APPROVAL_RULES_KEY)) {
-    const users = getUsers();
-    const approverId = users.find(u => u.username === 'approver')?.id;
-    const adminId = users.find(u => u.username === 'admin')?.id;
-    
-    const defaultRules = [];
-    
-    if (approverId) {
-      defaultRules.push({
-        id: uuidv4(),
-        approverId: approverId,
-        amountThreshold: 500,
-        isActive: true,
-        approveAll: false
-      });
-    }
-    
-    if (adminId) {
-      defaultRules.push({
-        id: uuidv4(),
-        approverId: adminId,
-        amountThreshold: 5000,
-        isActive: true,
-        approveAll: true
-      });
-    }
-    
-    localStorage.setItem(APPROVAL_RULES_KEY, JSON.stringify(defaultRules));
-  }
-
-  // Initialize SMTP config if not exists
-  if (!localStorage.getItem(SMTP_CONFIG_KEY)) {
-    const defaultConfig = {
-      host: 'smtp.example.com',
-      port: 587,
-      secure: false,
-      user: 'pettycash@example.com',
-      password: 'password',
-      fromEmail: 'pettycash@example.com',
-      fromName: 'Petty Cash System'
-    };
-    
-    localStorage.setItem(SMTP_CONFIG_KEY, JSON.stringify(defaultConfig));
-  }
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // User functions
-export const getUsers = () => {
-  const usersJson = localStorage.getItem(USERS_KEY);
-  return usersJson ? JSON.parse(usersJson) : [];
+export const getUsers = async () => {
+  const res = await fetch(`${API_URL}/users`, { headers: getAuthHeaders() });
+  return res.json();
 };
 
-export const saveUser = (user) => {
-  const users = getUsers();
-  
-  if (user.id) {
-    // Update existing user
-    const index = users.findIndex(u => u.id === user.id);
-    if (index !== -1) {
-      users[index] = { ...users[index], ...user };
-    }
-  } else {
-    // Create new user
-    user.id = uuidv4();
-    users.push(user);
-  }
-  
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  return user;
+export const saveUser = async (user) => {
+  const url = user.id ? `${API_URL}/users/${user.id}` : `${API_URL}/users`;
+  const method = user.id ? 'PUT' : 'POST';
+  const res = await fetch(url, {
+    method,
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(user),
+  });
+  return res.json();
 };
 
 // Request functions
-export const getRequests = () => {
-  const requestsJson = localStorage.getItem(REQUESTS_KEY);
-  return requestsJson ? JSON.parse(requestsJson) : [];
+export const getRequests = async () => {
+  const res = await fetch(`${API_URL}/requests`, { headers: getAuthHeaders() });
+  return res.json();
 };
 
-export const saveRequest = (request) => {
-  const requests = getRequests();
-  
-  if (request.id) {
-    // Update existing request
-    const index = requests.findIndex(r => r.id === request.id);
-    if (index !== -1) {
-      requests[index] = { ...requests[index], ...request };
-    }
-  } else {
-    // Create new request
-    request.id = uuidv4();
-    request.status = 'pending';
-    request.createdAt = new Date().toISOString();
-    requests.push(request);
-  }
-  
-  localStorage.setItem(REQUESTS_KEY, JSON.stringify(requests));
-  return request;
+export const saveRequest = async (request) => {
+  const url = request.id ? `${API_URL}/requests/${request.id}` : `${API_URL}/requests`;
+  const method = request.id ? 'PUT' : 'POST';
+  const res = await fetch(url, {
+    method,
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return res.json();
 };
 
 // Receipt functions
-export const getReceipts = () => {
-  const receiptsJson = localStorage.getItem(RECEIPTS_KEY);
-  return receiptsJson ? JSON.parse(receiptsJson) : [];
+export const getReceipts = async () => {
+  const res = await fetch(`${API_URL}/receipts`, { headers: getAuthHeaders() });
+  return res.json();
 };
 
-export const saveReceipt = (receipt) => {
-  const receipts = getReceipts();
-  
-  if (receipt.id) {
-    // Update existing receipt
-    const index = receipts.findIndex(r => r.id === receipt.id);
-    if (index !== -1) {
-      receipts[index] = { ...receipts[index], ...receipt };
-    }
-  } else {
-    // Create new receipt
-    receipt.id = uuidv4();
-    receipt.uploadedAt = new Date().toISOString();
-    receipts.push(receipt);
-  }
-  
-  localStorage.setItem(RECEIPTS_KEY, JSON.stringify(receipts));
-  return receipt;
+export const saveReceipt = async (receipt) => {
+  const res = await fetch(`${API_URL}/receipts`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(receipt),
+  });
+  return res.json();
 };
 
 // Approval rule functions
-export const getApprovalRules = () => {
-  const rulesJson = localStorage.getItem(APPROVAL_RULES_KEY);
-  return rulesJson ? JSON.parse(rulesJson) : [];
+export const getApprovalRules = async () => {
+  const res = await fetch(`${API_URL}/roles`, { headers: getAuthHeaders() });
+  const roles = await res.json();
+  const rules = [];
+  for (const role of roles) {
+    const res = await fetch(`${API_URL}/roles/${role.id}/permissions`, { headers: getAuthHeaders() });
+    const permissions = await res.json();
+    for (const permission of permissions) {
+      if (permission.permission.startsWith('requests.approve')) {
+        rules.push({
+          id: permission.id,
+          approverId: role.id,
+          amountThreshold: parseInt(permission.permission.split('.')[2]),
+          isActive: true,
+          approveAll: permission.permission.endsWith('.all'),
+        });
+      }
+    }
+  }
+  return rules;
 };
 
-export const saveApprovalRule = (rule) => {
-  const rules = getApprovalRules();
-  
+export const saveApprovalRule = async (rule) => {
+  const permission = `requests.approve.${rule.approveAll ? 'all' : rule.amountThreshold}`;
   if (rule.id) {
-    // Update existing rule
-    const index = rules.findIndex(r => r.id === rule.id);
-    if (index !== -1) {
-      rules[index] = { ...rules[index], ...rule };
-    }
+    // This is not supported by the backend yet
   } else {
-    // Create new rule
-    rule.id = uuidv4();
-    rules.push(rule);
+    const res = await fetch(`${API_URL}/roles/${rule.approverId}/permissions`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permission }),
+    });
+    return res.json();
   }
-  
-  localStorage.setItem(APPROVAL_RULES_KEY, JSON.stringify(rules));
-  return rule;
 };
 
 // SMTP config functions
-export const getSmtpConfig = () => {
-  const configJson = localStorage.getItem(SMTP_CONFIG_KEY);
-  return configJson ? JSON.parse(configJson) : {
+export const getSmtpConfig = async () => {
+  // This is not supported by the backend yet
+  return {
     host: '',
     port: 587,
     secure: false,
     user: '',
     password: '',
     fromEmail: '',
-    fromName: 'Petty Cash System'
+    fromName: 'Petty Cash System',
   };
 };
 
-export const saveSmtpConfig = (config) => {
-  localStorage.setItem(SMTP_CONFIG_KEY, JSON.stringify(config));
+export const saveSmtpConfig = async (config) => {
+  // This is not supported by the backend yet
   return config;
 };
 
-// Email function (simulated)
-export const sendEmailNotification = (to, subject, body) => {
-  const config = getSmtpConfig();
-  
-  // In a real application, this would connect to an SMTP server
-  // For demo purposes, just log the email and return true
-  console.log(`Email sent to ${to}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Body: ${body}`);
-  console.log(`Using SMTP: ${config.host}:${config.port}`);
-  
-  return true;
+// Email function
+export const sendEmailNotification = async (to, subject, body) => {
+  const res = await fetch(`${API_URL}/send-email`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, subject, text: body }),
+  });
+  return res.json();
 };
