@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint ./src --quiet",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -16,6 +17,7 @@
     "@mui/material": "^6.0.2",
     "@supabase/supabase-js": "^2.47.12",
     "@types/prop-types": "^15.7.14",
+    "express": "^5.1.0",
     "nodemailer": "^7.0.5",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
