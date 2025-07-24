@@ -125,32 +125,30 @@ const ReceiptUpload = () => {
         throw new Error('Please enter a merchant name');
       }
       
-      // Upload file to Supabase Storage
-      const fileExt = receiptFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('receipts')
-        .upload(fileName, receiptFile);
-
-      if (uploadError) {
-        throw uploadError;
+      // Upload file to the server
+      const formData = new FormData();
+      formData.append('receipt', receiptFile);
+      const uploadResponse = await fetch('/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed');
       }
+      const uploadData = await uploadResponse.json();
 
       // Save receipt metadata to the database
-      const { data: receipt, error: receiptError } = await supabase
-        .from('receipts')
-        .insert({
-          request_id: selectedRequestId,
-          file_path: uploadData.path,
-          amount: parseFloat(receiptData.amount),
-          merchant: receiptData.merchant.trim(),
-          notes: receiptData.notes.trim(),
-          user_id: user.id,
-        });
-
-      if (receiptError) {
-        throw receiptError;
-      }
+      await pool.query(
+        'INSERT INTO receipts (request_id, file_path, amount, merchant, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6)',
+        [
+          selectedRequestId,
+          uploadData.filePath,
+          parseFloat(receiptData.amount),
+          receiptData.merchant.trim(),
+          receiptData.notes.trim(),
+          user.id,
+        ]
+      );
       
       // Notify relevant parties
       const selectedRequest = requests.find(r => r.id === selectedRequestId);
@@ -211,19 +209,20 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
 
   useEffect(() => {
     const fetchReceipts = async () => {
-      const { data, error } = await supabase
-        .from('receipts')
-        .select(`
-          *,
-          requests ( purpose, amount )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
+      try {
+        const { rows } = await pool.query(
+          `
+          SELECT receipts.*, requests.purpose, requests.amount AS request_amount
+          FROM receipts
+          JOIN requests ON receipts.request_id = requests.id
+          WHERE receipts.user_id = $1
+          ORDER BY receipts.created_at DESC
+        `,
+          [user.id]
+        );
+        setUserReceipts(rows);
+      } catch (error) {
         setErrorMessage(error.message);
-      } else {
-        setUserReceipts(data);
       }
     };
 
@@ -450,7 +449,7 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <a
-                          href={supabase.storage.from('receipts').getPublicUrl(receipt.file_path).data.publicUrl}
+                          href={receipt.file_path}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-600 hover:text-indigo-900"

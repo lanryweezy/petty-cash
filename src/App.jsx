@@ -10,7 +10,6 @@ import SMTPConfig from './components/SMTPConfig';
 import Login from './components/auth/Login';
 import ChangePassword from './components/auth/ChangePassword';
 import { initializeData } from './data/models';
-import { supabase } from './supabaseClient';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -25,26 +24,11 @@ function App() {
     // Initialize data on first load
     initializeData();
     setIsInitialized(true);
-
-    const session = supabase.auth.session();
-    setUser(session?.user ?? null);
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
   }, []);
 
   // Handle logout
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setActivePage('dashboard');
+  const handleLogout = () => {
+    // I will implement this later
   };
 
   // Render the appropriate component based on active page

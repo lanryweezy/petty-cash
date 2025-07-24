@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { supabase } from '../../supabaseClient';
+import pool from '../../db';
 import { getApprovalRules, saveApprovalRule } from '../data/models';
 
 const AdminPanel = () => {
@@ -19,11 +19,11 @@ const AdminPanel = () => {
   }, []);
 
   const loadData = async () => {
-    const { data: users, error } = await supabase.from('users').select('*');
-    if (error) {
+    try {
+      const { rows } = await pool.query('SELECT * FROM users');
+      setUsers(rows);
+    } catch (error) {
       setErrorMessage(error.message);
-    } else {
-      setUsers(users);
     }
 
     const allRules = getApprovalRules();
@@ -61,31 +61,16 @@ const AdminPanel = () => {
     try {
       if (editingUser.id) {
         // Update user
-        const { error } = await supabase
-          .from('users')
-          .update({
-            name: editingUser.name,
-            role: editingUser.role,
-          })
-          .eq('id', editingUser.id);
-        if (error) throw error;
-        await supabase.from('logs').insert({ message: `updated user ${editingUser.email}`, user_id: user.id });
+        await pool.query('UPDATE users SET name = $1, role = $2 WHERE id = $3', [editingUser.name, editingUser.role, editingUser.id]);
+        await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', [`updated user ${editingUser.email}`, user.id]);
         setSuccessMessage(`User ${editingUser.name} updated successfully`);
       } else {
         // Create user
-        const { data, error } = await supabase.auth.signUp({
-          email: editingUser.email,
-          password: editingUser.password,
-          options: {
-            data: {
-              name: editingUser.name,
-              role: editingUser.role,
-            },
-          },
-        });
-        if (error) throw error;
-        await supabase.from('logs').insert({ message: `created user ${data.user.email}`, user_id: user.id });
-        setSuccessMessage(`User ${data.user.email} created successfully`);
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(editingUser.password, salt);
+        const { rows } = await pool.query('INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *', [editingUser.name, editingUser.email, hashedPassword, editingUser.role]);
+        await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', [`created user ${rows[0].email}`, user.id]);
+        setSuccessMessage(`User ${rows[0].email} created successfully`);
       }
 
       // Reset form and refresh data
@@ -370,15 +355,15 @@ const AdminPanel = () => {
 
     useEffect(() => {
       const fetchCurrencies = async () => {
-        const { data, error } = await supabase.from('currencies').select('*');
-        if (error) {
-          setErrorMessage(error.message);
-        } else {
-          setCurrencies(data);
-          const defaultCurrency = data.find((c) => c.is_default);
+        try {
+          const { rows } = await pool.query('SELECT * FROM currencies');
+          setCurrencies(rows);
+          const defaultCurrency = rows.find((c) => c.is_default);
           if (defaultCurrency) {
             setDefaultCurrency(defaultCurrency.id);
           }
+        } catch (error) {
+          setErrorMessage(error.message);
         }
       };
       fetchCurrencies();
@@ -386,14 +371,8 @@ const AdminPanel = () => {
 
     const handleSaveSettings = async () => {
       try {
-        await supabase
-          .from('currencies')
-          .update({ is_default: false })
-          .eq('is_default', true);
-        await supabase
-          .from('currencies')
-          .update({ is_default: true })
-          .eq('id', defaultCurrency);
+        await pool.query('UPDATE currencies SET is_default = false WHERE is_default = true');
+        await pool.query('UPDATE currencies SET is_default = true WHERE id = $1', [defaultCurrency]);
         setSuccessMessage('Settings saved successfully');
       } catch (error) {
         setErrorMessage(error.message);

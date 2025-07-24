@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import pool from '../db';
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
@@ -7,18 +7,16 @@ const Logs = () => {
 
   useEffect(() => {
     const fetchLogs = async () => {
-      const { data, error } = await supabase
-        .from('logs')
-        .select(`
-          *,
-          users:user_id ( email )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
+      try {
+        const { rows } = await pool.query(`
+          SELECT logs.*, users.email
+          FROM logs
+          JOIN users ON logs.user_id = users.id
+          ORDER BY logs.created_at DESC
+        `);
+        setLogs(rows);
+      } catch (error) {
         setError(error.message);
-      } else {
-        setLogs(data);
       }
     };
 

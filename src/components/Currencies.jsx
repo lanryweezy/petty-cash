@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import pool from '../db';
 
 const Currencies = () => {
   const [currencies, setCurrencies] = useState([]);
@@ -12,11 +12,11 @@ const Currencies = () => {
   }, []);
 
   const fetchCurrencies = async () => {
-    const { data, error } = await supabase.from('currencies').select('*');
-    if (error) {
+    try {
+      const { rows } = await pool.query('SELECT * FROM currencies');
+      setCurrencies(rows);
+    } catch (error) {
       setError(error.message);
-    } else {
-      setCurrencies(data);
     }
   };
 
@@ -31,35 +31,26 @@ const Currencies = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     const { id, name, code, exchange_rate, is_default } = editingCurrency;
-    const { error } = await supabase
-      .from('currencies')
-      .update({ name, code, exchange_rate, is_default })
-      .eq('id', id);
-    if (error) {
-      setError(error.message);
-    } else {
+    try {
+      await pool.query('UPDATE currencies SET name = $1, code = $2, exchange_rate = $3, is_default = $4 WHERE id = $5', [name, code, exchange_rate, is_default, id]);
       setSuccess('Currency saved successfully!');
       setEditingCurrency(null);
       fetchCurrencies();
+    } catch (error) {
+      setError(error.message);
     }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
     const { name, code, exchange_rate } = e.target.elements;
-    const { error } = await supabase
-      .from('currencies')
-      .insert({
-        name: name.value,
-        code: code.value,
-        exchange_rate: exchange_rate.value,
-      });
-    if (error) {
-      setError(error.message);
-    } else {
+    try {
+      await pool.query('INSERT INTO currencies (name, code, exchange_rate) VALUES ($1, $2, $3)', [name.value, code.value, exchange_rate.value]);
       setSuccess('Currency added successfully!');
       fetchCurrencies();
       e.target.reset();
+    } catch (error) {
+      setError(error.message);
     }
   };
 
@@ -128,15 +119,13 @@ const Currencies = () => {
                     name="is_default"
                     checked={currency.is_default}
                     onChange={async () => {
-                      await supabase
-                        .from('currencies')
-                        .update({ is_default: false })
-                        .eq('is_default', true);
-                      await supabase
-                        .from('currencies')
-                        .update({ is_default: true })
-                        .eq('id', currency.id);
-                      fetchCurrencies();
+                      try {
+                        await pool.query('UPDATE currencies SET is_default = false WHERE is_default = true');
+                        await pool.query('UPDATE currencies SET is_default = true WHERE id = $1', [currency.id]);
+                        fetchCurrencies();
+                      } catch (error) {
+                        setError(error.message);
+                      }
                     }}
                   />
                 </td>

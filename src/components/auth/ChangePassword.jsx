@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import React, { useState, useContext } from 'react';
+import pool from '../../db';
+import bcrypt from 'bcrypt';
+import { AuthContext } from '../../App';
 
 const ChangePassword = () => {
+  const { user } = useContext(AuthContext);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -9,9 +12,10 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      await supabase.from('logs').insert({ message: 'updated password', user_id: data.user.id });
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.id]);
+      await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', ['updated password', user.id]);
       setSuccess('Password updated successfully!');
     } catch (error) {
       setError(error.message);

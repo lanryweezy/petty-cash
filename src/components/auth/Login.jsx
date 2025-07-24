@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import pool from '../../db';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -9,12 +11,17 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      onLogin(data.user);
+      const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      if (rows.length === 0) {
+        throw new Error('Invalid email or password');
+      }
+      const user = rows[0];
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        throw new Error('Invalid email or password');
+      }
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      onLogin({ ...user, token });
     } catch (error) {
       setError(error.message);
       setTimeout(() => {
