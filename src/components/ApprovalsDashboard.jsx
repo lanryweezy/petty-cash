@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext';
-import { getRequests, saveRequest, getUsers } from '../data/models';
-import transporter from '../email';
+import { getRequests, saveRequest, getUsers, sendEmailNotification } from '../data/models.jsx';
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -11,17 +10,18 @@ const ApprovalsDashboard = () => {
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [filter, setFilter] = useState('pending');
   const [users, setUsers] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     // Load all requests and users
-    const loadData = () => {
-      const allRequests = getRequests();
+    const loadData = async () => {
+      const allRequests = await getRequests();
       setRequests(allRequests);
       
       // Create a map of user IDs to user objects for easy lookup
-      const allUsers = getUsers();
+      const allUsers = await getUsers();
       const usersMap = {};
       allUsers.forEach(user => {
         usersMap[user.id] = user;
@@ -29,23 +29,32 @@ const ApprovalsDashboard = () => {
       setUsers(usersMap);
       
       // Apply filter
-      filterRequests(allRequests, filter);
+      filterRequests(allRequests, filter, searchTerm);
     };
     
     loadData();
-  }, [filter]);
+  }, [filter, searchTerm]);
   
-  // Filter requests based on status
-  const filterRequests = (requestsToFilter, filterStatus) => {
-    if (filterStatus === 'all') {
-      setFilteredRequests(requestsToFilter);
-    } else {
-      setFilteredRequests(requestsToFilter.filter(r => r.status === filterStatus));
+  // Filter requests based on status and search term
+  const filterRequests = (requestsToFilter, filterStatus, searchTerm) => {
+    let filtered = requestsToFilter;
+
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(r => r.status === filterStatus);
     }
+
+    if (searchTerm) {
+      filtered = filtered.filter(r =>
+        r.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        users[r.userId]?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredRequests(filtered);
   };
   
   // Handle approval/rejection of a request
-  const handleApprovalAction = (requestId, action) => {
+  const handleApprovalAction = async (requestId, action) => {
     try {
       // Find the request
       const requestToUpdate = requests.find(r => r.id === requestId);
@@ -60,29 +69,27 @@ const ApprovalsDashboard = () => {
       requestToUpdate.approvedAt = new Date().toISOString();
       
       // Save the updated request
-      saveRequest(requestToUpdate);
+      await saveRequest(requestToUpdate);
       
       // Send email notification to requester
       const requester = users[requestToUpdate.userId];
       if (requester) {
-        const mailOptions = {
-          from: process.env.SMTP_USER,
-          to: requester.email,
-          subject: `Your Petty Cash Request has been ${requestToUpdate.status}`,
-          text: `Your petty cash request for $${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
+        await sendEmailNotification(
+          requester.email,
+          `Your Petty Cash Request has been ${requestToUpdate.status}`,
+          `Your petty cash request for ${currency?.symbol}${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.
            
 ${action === 'approve' ? 'You may now collect the cash from the cashier. Please remember to upload the receipt after your purchase.' : 'If you have any questions, please contact the approver directly.'}`
-        };
-        transporter.sendMail(mailOptions);
+        );
       }
       
       // Show success message
       setSuccessMessage(`Request has been ${requestToUpdate.status} successfully`);
       
       // Refresh the data
-      const updatedRequests = getRequests();
+      const updatedRequests = await getRequests();
       setRequests(updatedRequests);
-      filterRequests(updatedRequests, filter);
+      filterRequests(updatedRequests, filter, searchTerm);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -136,7 +143,17 @@ ${action === 'approve' ? 'You may now collect the cash from the cashier. Please 
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">Cash Requests</h3>
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="border p-2 rounded-md"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  filterRequests(requests, filter, e.target.value);
+                }}
+              />
               <button
                 onClick={() => setFilter('all')}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md ${

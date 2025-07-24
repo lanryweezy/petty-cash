@@ -1,16 +1,15 @@
 import React, { useState, useEffect, createContext } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import RequestForm from './components/RequestForm';
-import ApprovalsDashboard from './components/ApprovalsDashboard';
-import ReceiptUpload from './components/ReceiptUpload';
-import AdminPanel from './components/AdminPanel';
-import SMTPConfig from './components/SMTPConfig';
-import Login from './components/auth/Login';
-import ChangePassword from './components/auth/ChangePassword';
-import { initializeData } from './data/models';
-import { supabase } from './supabaseClient';
+import Header from './components/Header.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import Dashboard from './components/Dashboard.jsx';
+import RequestForm from './components/RequestForm.jsx';
+import ApprovalsDashboard from './components/ApprovalsDashboard.jsx';
+import ReceiptUpload from './components/ReceiptUpload.jsx';
+import AdminPanel from './components/AdminPanel.jsx';
+import SMTPConfig from './components/SMTPConfig.jsx';
+import Login from './components/auth/Login.jsx';
+import ChangePassword from './components/auth/ChangePassword.jsx';
+import { login, signup } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -19,30 +18,25 @@ export const NavigationContext = createContext(null);
 function App() {
   const [user, setUser] = useState(null);
   const [activePage, setActivePage] = useState('dashboard');
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Initialize data on first load
-    initializeData();
-    setIsInitialized(true);
-
-    const session = supabase.auth.session();
-    setUser(session?.user ?? null);
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    const token = localStorage.getItem('token');
+    if (token) {
+      // In a real app, we'd verify the token with the backend
+      // For now, just assume it's valid
+      setUser({ token });
+    }
   }, []);
 
+  const handleLogin = async (email, password) => {
+    const { token } = await login(email, password);
+    localStorage.setItem('token', token);
+    setUser({ token });
+  };
+
   // Handle logout
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
     setUser(null);
     setActivePage('dashboard');
   };
@@ -70,29 +64,16 @@ function App() {
         return <Reports />;
       case 'currencies':
         return <Currencies />;
+      case 'roles':
+        return <Roles />;
       default:
         return <Dashboard />;
     }
   };
 
-  // If not initialized yet, show loading
-  if (!isInitialized) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <svg className="animate-spin h-10 w-10 mx-auto text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="mt-3 text-gray-600">Loading Petty Cash System...</p>
-        </div>
-      </div>
-    );
-  }
-
   // If no user is logged in, show login screen
   if (!user) {
-    return <Login onLogin={setUser} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (

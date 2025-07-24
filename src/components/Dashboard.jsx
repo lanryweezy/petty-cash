@@ -16,7 +16,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { getRequests, getReceipts, initializeData } from '../data/models';
+import { getRequests, getReceipts } from '../data/models.jsx';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
@@ -28,12 +28,9 @@ const Dashboard = () => {
   const [monthlyData, setMonthlyData] = useState([]);
   
   useEffect(() => {
-    // Initialize data on first load
-    initializeData();
-    
     // Load data
-    const loadData = () => {
-      const allRequests = getRequests();
+    const loadData = async () => {
+      const allRequests = await getRequests();
       setRequests(allRequests);
       
       // Calculate pending approvals
@@ -42,18 +39,18 @@ const Dashboard = () => {
       
       // Calculate this month's spent amount
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const approvedThisMonth = allRequests.filter(
-        r => r.status === 'approved' && r.approvedAt >= startOfMonth
+        r => r.status === 'approved' && new Date(r.approved_at) >= startOfMonth
       );
       const totalSpent = approvedThisMonth.reduce((sum, r) => sum + r.amount, 0);
       setThisMonthSpent(totalSpent);
       
       // Calculate pending receipts
       const approvedRequests = allRequests.filter(r => r.status === 'approved');
-      const receipts = getReceipts();
+      const receipts = await getReceipts();
       const pendingReceiptsCount = approvedRequests.filter(
-        r => !receipts.some(receipt => receipt.requestId === r.id)
+        r => !receipts.some(receipt => receipt.request_id === r.id)
       ).length;
       setPendingReceipts(pendingReceiptsCount);
       
@@ -81,9 +78,9 @@ const Dashboard = () => {
       }).reverse();
       
       const monthlySpending = last6Months.map(({ month, timestamp }) => {
-        const nextMonth = new Date(new Date(timestamp).setMonth(new Date(timestamp).getMonth() + 1)).toISOString();
+        const nextMonth = new Date(new Date(timestamp).setMonth(new Date(timestamp).getMonth() + 1));
         const approved = allRequests.filter(
-          r => r.status === 'approved' && r.approvedAt >= timestamp && r.approvedAt < nextMonth
+          r => r.status === 'approved' && new Date(r.approved_at) >= timestamp && new Date(r.approved_at) < nextMonth
         );
         const amount = approved.reduce((sum, r) => sum + r.amount, 0);
         return { month, amount };
@@ -116,9 +113,9 @@ const Dashboard = () => {
         />
         
         <StatsCard 
-          title="Pending Approvals"
-          value={pendingApprovals}
-          change={pendingApprovals > 0 ? 'Needs attention' : 'All clear'}
+          title="Pending Amount"
+          value={`$${requests.filter(r => r.status === 'pending').reduce((sum, r) => sum + r.amount, 0).toFixed(2)}`}
+          change={`${pendingApprovals} requests`}
           trend={pendingApprovals > 0 ? 'up' : 'down'}
           icon={{ bgColor: 'bg-yellow-500', path: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }}
         />

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -9,12 +8,7 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      onLogin(data.user);
+      await onLogin(email, password);
     } catch (error) {
       setError(error.message);
       setTimeout(() => {
