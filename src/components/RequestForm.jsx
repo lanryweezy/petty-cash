@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
-import { CurrencyContext } from '../CurrencyContext';
+import { CurrencyContext } from '../CurrencyContext.jsx';
 import { saveRequest, getApprovalRules, getUsers } from '../data/models';
 import transporter from '../email';
 
