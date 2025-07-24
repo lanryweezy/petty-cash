@@ -1,15 +1,15 @@
 import React, { useState, useEffect, createContext } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import RequestForm from './components/RequestForm';
-import ApprovalsDashboard from './components/ApprovalsDashboard';
-import ReceiptUpload from './components/ReceiptUpload';
-import AdminPanel from './components/AdminPanel';
-import SMTPConfig from './components/SMTPConfig';
-import Login from './components/auth/Login';
-import ChangePassword from './components/auth/ChangePassword';
-import { login, signup } from './data/models';
+import Header from './components/Header.jsx';
+import Sidebar from './components/Sidebar.jsx';
+import Dashboard from './components/Dashboard.jsx';
+import RequestForm from './components/RequestForm.jsx';
+import ApprovalsDashboard from './components/ApprovalsDashboard.jsx';
+import ReceiptUpload from './components/ReceiptUpload.jsx';
+import AdminPanel from './components/AdminPanel.jsx';
+import SMTPConfig from './components/SMTPConfig.jsx';
+import Login from './components/auth/Login.jsx';
+import ChangePassword from './components/auth/ChangePassword.jsx';
+import { login, signup } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);

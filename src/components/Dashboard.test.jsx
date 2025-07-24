@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import Dashboard from './Dashboard';
-import { AuthContext } from '../App';
-import { CurrencyContext } from '../CurrencyContext';
+import Dashboard from './Dashboard.jsx';
+import { AuthContext } from '../App.jsx';
+import { CurrencyContext } from '../CurrencyContext.jsx';
 
 describe('Dashboard', () => {
   it('renders the dashboard', () => {

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { supabase } from './supabaseClient';
+import { getCurrencies } from './data/models.jsx';
 
 export const CurrencyContext = createContext();
 
@@ -8,16 +8,9 @@ export const CurrencyProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchCurrency = async () => {
-      const { data, error } = await supabase
-        .from('currencies')
-        .select('*')
-        .eq('is_default', true)
-        .single();
-      if (error) {
-        console.error(error);
-      } else {
-        setCurrency(data);
-      }
+      const currencies = await getCurrencies();
+      const defaultCurrency = currencies.find(c => c.is_default);
+      setCurrency(defaultCurrency);
     };
     fetchCurrency();
   }, []);

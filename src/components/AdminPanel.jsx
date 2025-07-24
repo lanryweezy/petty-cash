@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { supabase } from '../../supabaseClient';
-import { getUsers, saveUser, getApprovalRules, saveApprovalRule, getRoles } from '../data/models';
+import { getUsers, saveUser, getApprovalRules, saveApprovalRule, getRoles } from '../data/models.jsx';
 
 const AdminPanel = () => {
   const { user } = useContext(AuthContext);

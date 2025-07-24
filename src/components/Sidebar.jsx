@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { AuthContext, NavigationContext } from '../App';
+import { AuthContext, NavigationContext } from '../App.jsx';
 
 const Sidebar = () => {
   const { user } = useContext(AuthContext);

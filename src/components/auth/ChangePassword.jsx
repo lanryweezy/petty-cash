@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { changePassword } from '../../data/models';
+import { changePassword } from '../../data/models.jsx';
 
 const ChangePassword = () => {
   const [password, setPassword] = useState('');

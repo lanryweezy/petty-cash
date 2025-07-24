@@ -1,8 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext';
-import { saveRequest, getApprovalRules, getUsers } from '../data/models';
-import transporter from '../email';
+import { saveRequest, getApprovalRules, getUsers, sendEmailNotification } from '../data/models.jsx';
 
 const RequestForm = () => {
   const { user } = useContext(AuthContext);

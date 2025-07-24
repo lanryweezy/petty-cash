@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext';
-import { getRequests, saveRequest, getUsers, sendEmailNotification } from '../data/models';
+import { getRequests, saveRequest, getUsers, sendEmailNotification } from '../data/models.jsx';
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);

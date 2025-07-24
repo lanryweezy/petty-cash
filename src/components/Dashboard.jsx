@@ -16,7 +16,7 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { getRequests, getReceipts } from '../data/models';
+import { getRequests, getReceipts } from '../data/models.jsx';
 
 const Dashboard = () => {
   const { user } = useContext(AuthContext);
