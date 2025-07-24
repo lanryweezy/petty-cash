@@ -31,3 +31,7 @@ pnpm run dev
 ```shell
 Pnpm run build
 ```
+
+## Dependency Warnings
+
+If you encounter dependency warnings after running `npm install`, you can try running `npm audit fix --force` to resolve them.
