@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext';
-import { saveRequest, getApprovalRules, getUsers, sendEmailNotification } from '../data/models.jsx';
+import { saveRequest, getApprovalRules, getUsers } from '../data/models.jsx';
 
 const RequestForm = () => {
   const { user } = useContext(AuthContext);
@@ -57,7 +57,7 @@ const RequestForm = () => {
       let notifiedApprovers = [];
 
       // Find applicable rules
-      rules.forEach(rule => {
+      for (const rule of rules) {
         if (rule.isActive) {
           if (rule.approveAll || amountValue <= rule.amountThreshold) {
             const approver = approvers.find(a => a.id === rule.approverId);
@@ -81,7 +81,7 @@ Please login to the Petty Cash system to approve or reject this request.`
             }
           }
         }
-      });
+      }
 
       // Show success message
       setSuccessMessage(`Your request has been submitted successfully. ${notifiedApprovers.length > 0 ? 'Approvers have been notified.' : ''}`);
