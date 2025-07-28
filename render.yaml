@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: petty-cash
+    env: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist

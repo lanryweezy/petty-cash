@@ -9,8 +9,9 @@
     "build": "vite build",
     "lint": "eslint ./src --quiet",
     "preview": "vite preview",
-"test": "jest",
-    "start": "vite"
+    "test": "jest",
+    "start": "serve -s dist",
+    "build": "vite build"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -23,6 +24,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.15.1",
+    "serve": "^14.2.4",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
