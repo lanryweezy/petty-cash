@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { CurrencyContext } from '../CurrencyContext';
-import { getRequests, getReceipts, saveReceipt, sendEmailNotification, getUsers } from '../data/models.jsx';
+import { CurrencyContext } from '../CurrencyContext.jsx';
+import { getRequests, getReceipts, saveReceipt, sendEmailNotification, getUsers } from '../data/models';
+import pool from '../db';
 
 const ReceiptUpload = () => {
   const { user } = useContext(AuthContext);
@@ -133,18 +134,30 @@ const ReceiptUpload = () => {
         throw new Error('Please enter a merchant name');
       }
       
-      // In a real app, we would upload the file to a storage service
-      // For this demo, we'll just save the file name
-      const newReceipt = {
-        requestId: selectedRequestId,
-        filePath: receiptFile.name,
-        amount: parseFloat(receiptData.amount),
-        merchant: receiptData.merchant.trim(),
-        notes: receiptData.notes.trim(),
-        userId: user.id,
-      };
+      // Upload file to the server
+      const formData = new FormData();
+      formData.append('receipt', receiptFile);
+      const uploadResponse = await fetch('/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed');
+      }
+      const uploadData = await uploadResponse.json();
 
-      await saveReceipt(newReceipt);
+      // Save receipt metadata to the database
+      await pool.query(
+        'INSERT INTO receipts (request_id, file_path, amount, merchant, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6)',
+        [
+          selectedRequestId,
+          uploadData.filePath,
+          parseFloat(receiptData.amount),
+          receiptData.merchant.trim(),
+          receiptData.notes.trim(),
+          user.id,
+        ]
+      );
       
       // Notify relevant parties
       const selectedRequest = requests.find(r => r.id === selectedRequestId);
@@ -155,15 +168,7 @@ const ReceiptUpload = () => {
         await sendEmailNotification(
           approver.email,
           'Receipt Uploaded for Approved Request',
-          `A receipt has been uploaded for the approved request:
-           
-Request: ${selectedRequest.purpose}
-Amount Requested: ${currency?.symbol}${selectedRequest.amount.toFixed(2)}
-Receipt Amount: ${currency?.symbol}${parseFloat(receiptData.amount).toFixed(2)}
-Merchant: ${receiptData.merchant}
-Uploaded by: ${user.name}
-
-${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
+          `A receipt has been uploaded for the approved request:\n\nRequest: ${selectedRequest.purpose}\nAmount Requested: ${currency?.symbol}${selectedRequest.amount.toFixed(2)}\nReceipt Amount: ${currency?.symbol}${parseFloat(receiptData.amount).toFixed(2)}\nMerchant: ${receiptData.merchant}\nUploaded by: ${user.name}\n\n${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
         );
       }
       
@@ -205,14 +210,21 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
 
   useEffect(() => {
     const fetchReceipts = async () => {
-      const receipts = await getReceipts();
-      let filteredReceipts = receipts;
-      if (searchTerm) {
-        filteredReceipts = filteredReceipts.filter(r =>
-          r.requests.purpose.toLowerCase().includes(searchTerm.toLowerCase())
+      try {
+        const { rows } = await pool.query(
+          `
+          SELECT receipts.*, requests.purpose, requests.amount AS request_amount
+          FROM receipts
+          JOIN requests ON receipts.request_id = requests.id
+          WHERE receipts.user_id = $1
+          ORDER BY receipts.created_at DESC
+        `,
+          [user.id]
         );
+        setUserReceipts(rows);
+      } catch (error) {
+        setErrorMessage(error.message);
       }
-      setUserReceipts(filteredReceipts);
     };
 
     fetchReceipts();
@@ -320,7 +332,7 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                       type="file" 
                       className="hidden"
                       onChange={handleFileChange}
-                      accept="/images/FileUpload.jpg,.pdf"
+                      accept="image/jpeg,image/png,application/pdf"
                     />
                   </label>
                 </div>
@@ -446,7 +458,14 @@ ${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
                         {currency?.symbol}{receipt.amount.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {receipt.file_path}
+                        <a
+                          href={receipt.file_path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View Receipt
+                        </a>
                       </td>
                     </tr>
                   ))}

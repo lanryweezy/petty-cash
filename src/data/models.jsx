@@ -5,6 +5,47 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+export const login = async (email, password) => {
+  const res = await fetch(`${API_URL}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message);
+  }
+  return res.json();
+};
+
+export const signup = async (userData) => {
+  const res = await fetch(`${API_URL}/signup`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  return res.json();
+};
+
+export const changePassword = async (oldPassword, newPassword) => {
+  const res = await fetch(`${API_URL}/change-password`, {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ oldPassword, newPassword }),
+  });
+  return res.json();
+};
+
+export const getCurrencies = async () => {
+  const res = await fetch(`${API_URL}/currencies`, { headers: getAuthHeaders() });
+  return res.json();
+};
+
+export const getRoles = async () => {
+  const res = await fetch(`${API_URL}/roles`, { headers: getAuthHeaders() });
+  return res.json();
+};
+
 // User functions
 export const getUsers = async () => {
   const res = await fetch(`${API_URL}/users`, { headers: getAuthHeaders() });

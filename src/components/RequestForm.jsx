@@ -1,7 +1,8 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext, NavigationContext } from '../App';
-import { CurrencyContext } from '../CurrencyContext';
-import { saveRequest, getApprovalRules, getUsers } from '../data/models.jsx';
+import { CurrencyContext } from '../CurrencyContext.jsx';
+import { saveRequest, getApprovalRules, getUsers } from '../data/models';
+import transporter from '../email';
 
 const RequestForm = () => {
   const { user } = useContext(AuthContext);
@@ -64,20 +65,12 @@ const RequestForm = () => {
             if (approver && !notifiedApprovers.includes(approver.id)) {
               notifiedApprovers.push(approver);
               
-              await supabase.functions.invoke('send-email', {
-                body: {
-                  to: approver.email,
-                  subject: `New Petty Cash Request: ${purpose}`,
-                  text: `A new petty cash request has been submitted:
-
-Requester: ${user.name}
-Amount: $${amountValue.toFixed(2)}
-Purpose: ${purpose}
-Description: ${description}
-
-Please login to the Petty Cash system to approve or reject this request.`
-                }
-              })
+              const mailOptions = {
+                to: approver.email,
+                subject: `New Petty Cash Request: ${purpose}`,
+                text: `A new petty cash request has been submitted:\n\nRequester: ${user.name}\nAmount: ${currency?.symbol}${amountValue.toFixed(2)}\nPurpose: ${purpose}\nDescription: ${description}\n\nPlease login to the Petty Cash system to approve or reject this request.`
+              };
+              await transporter.sendMail(mailOptions);
             }
           }
         }

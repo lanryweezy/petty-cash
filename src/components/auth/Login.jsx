@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import pool from '../../db';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -8,7 +11,17 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await onLogin(email, password);
+      const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      if (rows.length === 0) {
+        throw new Error('Invalid email or password');
+      }
+      const user = rows[0];
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        throw new Error('Invalid email or password');
+      }
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      onLogin({ ...user, token });
     } catch (error) {
       setError(error.message);
       setTimeout(() => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import { supabase } from '../../supabaseClient';
-import { getUsers, saveUser, getApprovalRules, saveApprovalRule, getRoles } from '../data/models.jsx';
+import pool from '../../db';
+import { getApprovalRules, saveApprovalRule, getRoles } from '../data/models';
+import bcrypt from 'bcrypt';
 
 const AdminPanel = () => {
   const { user } = useContext(AuthContext);
@@ -21,14 +22,19 @@ const AdminPanel = () => {
   }, []);
 
   const loadData = async () => {
-    const users = await getUsers();
-    setUsers(users);
+    try {
+      const usersData = await pool.query('SELECT * FROM users');
+      setUsers(usersData.rows);
 
-    const roles = await getRoles();
-    setRoles(roles);
+      const rolesData = await getRoles();
+      setRoles(rolesData);
 
-    const allRules = await getApprovalRules();
-    setRules(allRules);
+      const allRules = await getApprovalRules();
+      setRules(allRules);
+
+    } catch (error) {
+      setErrorMessage(error.message);
+    }
   };
 
   // Handle user form
@@ -60,8 +66,21 @@ const AdminPanel = () => {
     e.preventDefault();
 
     try {
-      await saveUser(editingUser);
-      setSuccessMessage(`User ${editingUser.name} saved successfully`);
+      if (editingUser.id) {
+        // Update user
+        await pool.query('UPDATE users SET name = $1, role = $2 WHERE id = $3', [editingUser.name, editingUser.role, editingUser.id]);
+        await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', [`updated user ${editingUser.email}`, user.id]);
+        setSuccessMessage(`User ${editingUser.name} updated successfully`);
+      } else {
+        // Create user
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(editingUser.password, salt);
+        const { rows } = await pool.query('INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *', [editingUser.name, editingUser.email, hashedPassword, editingUser.role]);
+        await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', [`created user ${rows[0].email}`, user.id]);
+        setSuccessMessage(`User ${rows[0].email} created successfully`);
+      }
+
+      // Reset form and refresh data
       setEditingUser(null);
       loadData();
 
@@ -208,7 +227,7 @@ const AdminPanel = () => {
                   <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className_name="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -345,73 +364,9 @@ const AdminPanel = () => {
     );
   };
 
-  const renderSettingsTab = () => {
-    const [currencies, setCurrencies] = useState([]);
-    const [defaultCurrency, setDefaultCurrency] = useState('');
-
-    useEffect(() => {
-      const fetchCurrencies = async () => {
-        const { data, error } = await supabase.from('currencies').select('*');
-        if (error) {
-          setErrorMessage(error.message);
-        } else {
-          setCurrencies(data);
-          const defaultCurrency = data.find((c) => c.is_default);
-          if (defaultCurrency) {
-            setDefaultCurrency(defaultCurrency.id);
-          }
-        }
-      };
-      fetchCurrencies();
-    }, []);
-
-    const handleSaveSettings = async () => {
-      try {
-        await supabase
-          .from('currencies')
-          .update({ is_default: false })
-          .eq('is_default', true);
-        await supabase
-          .from('currencies')
-          .update({ is_default: true })
-          .eq('id', defaultCurrency);
-        setSuccessMessage('Settings saved successfully');
-      } catch (error) {
-        setErrorMessage(error.message);
-      }
-    };
-
-    return (
-      <div>
-        <h2 className="text-lg font-medium text-gray-900 mb-4">Settings</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="defaultCurrency">
-            Default Currency
-          </label>
-          <select
-            id="defaultCurrency"
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            value={defaultCurrency}
-            onChange={(e) => setDefaultCurrency(e.target.value)}
-          >
-            {currencies.map((currency) => (
-              <option key={currency.id} value={currency.id}>
-                {currency.name} ({currency.code})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex justify-end">
-          <button
-            onClick={handleSaveSettings}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Save Settings
-          </button>
-        </div>
-      </div>
-    );
-  };
+  const renderApprovalRulesTab = () => {
+    return <div>Approval Rules</div>
+  }
 
   return (
     <div>

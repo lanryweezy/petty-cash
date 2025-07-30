@@ -9,7 +9,7 @@ import AdminPanel from './components/AdminPanel.jsx';
 import SMTPConfig from './components/SMTPConfig.jsx';
 import Login from './components/auth/Login.jsx';
 import ChangePassword from './components/auth/ChangePassword.jsx';
-import { login, signup } from './data/models.jsx';
+import { login, initializeData } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -20,6 +20,7 @@ function App() {
   const [activePage, setActivePage] = useState('dashboard');
 
   useEffect(() => {
+    initializeData();
     const token = localStorage.getItem('token');
     if (token) {
       // In a real app, we'd verify the token with the backend

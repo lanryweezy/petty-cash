@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { getReceipts, getUsers } from '../data/models';
-import { CurrencyContext } from '../CurrencyContext';
+import pool from '../db';
+import { CurrencyContext } from '../CurrencyContext.jsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Reports = () => {
@@ -10,46 +10,36 @@ const Reports = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSpendingByCategory = async () => {
       try {
-        const receipts = await getReceipts();
-        const users = await getUsers();
-
-        // Spending by category
-        const byCategory = receipts.reduce((acc, receipt) => {
-          const category = receipt.requests.purpose;
-          const amount = receipt.amount;
-          const existingCategory = acc.find((item) => item.name === category);
-          if (existingCategory) {
-            existingCategory.amount += amount;
-          } else {
-            acc.push({ name: category, amount });
-          }
-          return acc;
-        }, []);
-        setSpendingByCategory(byCategory);
-
-        // Spending by user
-        const byUser = receipts.reduce((acc, receipt) => {
-          const user = users.find(u => u.id === receipt.user_id)?.email;
-          const amount = receipt.amount;
-          if (user) {
-            const existingUser = acc.find((item) => item.name === user);
-            if (existingUser) {
-              existingUser.amount += amount;
-            } else {
-              acc.push({ name: user, amount });
-            }
-          }
-          return acc;
-        }, []);
-        setSpendingByUser(byUser);
-      } catch (err) {
-        setError(err.message);
+        const { rows } = await pool.query(`
+          SELECT r.purpose, SUM(receipts.amount) as amount
+          FROM receipts
+          JOIN requests r ON receipts.request_id = r.id
+          GROUP BY r.purpose
+        `);
+        setSpendingByCategory(rows.map(row => ({ name: row.purpose, amount: parseFloat(row.amount) })));
+      } catch (error) {
+        setError(error.message);
       }
     };
 
-    fetchData();
+    const fetchSpendingByUser = async () => {
+      try {
+        const { rows } = await pool.query(`
+          SELECT u.email, SUM(receipts.amount) as amount
+          FROM receipts
+          JOIN users u ON receipts.user_id = u.id
+          GROUP BY u.email
+        `);
+        setSpendingByUser(rows.map(row => ({ name: row.email, amount: parseFloat(row.amount) })));
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
+    fetchSpendingByCategory();
+    fetchSpendingByUser();
   }, []);
 
   return (
