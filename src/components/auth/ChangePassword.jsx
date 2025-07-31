@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import pool from '../../db';
+import pool from '../../../server/db.js';
 import bcrypt from 'bcrypt';
 import { AuthContext } from '../../App';
 

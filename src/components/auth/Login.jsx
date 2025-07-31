@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import pool from '../../db';
+import pool from '../../../server/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 

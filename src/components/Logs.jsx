@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import pool from '../db';
+
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);

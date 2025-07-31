@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext.jsx';
 import { getRequests, saveRequest, getUsers } from '../data/models';
-import transporter from '../email';
+
 
 const ApprovalsDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -75,12 +75,7 @@ const ApprovalsDashboard = () => {
       // Send email notification to requester
       const requester = users[requestToUpdate.userId];
       if (requester) {
-        await transporter.sendMail({
-          from: 'your-email@example.com',
-          to: requester.email,
-          subject: `Your Petty Cash Request has been ${requestToUpdate.status}`,
-          text: `Your petty cash request for ${currency?.symbol}${requestToUpdate.amount.toFixed(2)} (${requestToUpdate.purpose}) has been ${requestToUpdate.status} by ${user.name}.\n\n${action === 'approve' ? 'You may now collect the cash from the cashier. Please remember to upload the receipt after your purchase.' : 'If you have any questions, please contact the approver directly.'}`
-        });
+        
       }
       
       // Show success message

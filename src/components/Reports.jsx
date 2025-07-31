@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import pool from '../db';
+
 import { CurrencyContext } from '../CurrencyContext.jsx';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 

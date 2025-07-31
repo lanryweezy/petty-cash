@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext.jsx';
 import { getRequests, getReceipts, saveReceipt, sendEmailNotification, getUsers } from '../data/models';
-import pool from '../db';
+
 
 const ReceiptUpload = () => {
   const { user } = useContext(AuthContext);

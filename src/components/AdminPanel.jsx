@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
-import pool from '../../db';
+
 import { getApprovalRules, saveApprovalRule, getRoles } from '../data/models';
-import bcrypt from 'bcrypt';
+
 
 const AdminPanel = () => {
   const { user } = useContext(AuthContext);
