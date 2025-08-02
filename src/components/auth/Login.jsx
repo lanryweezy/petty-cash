@@ -1,32 +1,66 @@
 import React, { useState } from 'react';
-import pool from '../../../server/db.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showDevHelper, setShowDevHelper] = useState(true);
+  const [creatingUser, setCreatingUser] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-      if (rows.length === 0) {
-        throw new Error('Invalid email or password');
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
       }
-      const user = rows[0];
-      const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) {
-        throw new Error('Invalid email or password');
-      }
-      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      onLogin({ ...user, token });
+
+      // Store token in localStorage for persistent login
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      onLogin({ ...data.user, token: data.token });
     } catch (error) {
       setError(error.message);
       setTimeout(() => {
         setError('');
       }, 3000);
+    }
+  };
+
+  const createDefaultAdmin = async () => {
+    setCreatingUser(true);
+    try {
+      const response = await fetch('/api/auth/create-default-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUsername('admin');
+        setPassword('admin123');
+        setShowDevHelper(false);
+        setError('');
+      } else {
+        setError(data.error || 'Failed to create default admin');
+      }
+    } catch (error) {
+      setError('Failed to create default admin');
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -48,6 +82,37 @@ const Login = ({ onLogin }) => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {showDevHelper && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Development Mode:</strong> No users exist yet. Click below to create a default admin user.
+                  </p>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={createDefaultAdmin}
+                      disabled={creatingUser}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      {creatingUser ? 'Creating...' : 'Create Default Admin User'}
+                    </button>
+                  </div>
+                  <div className="mt-2 text-xs text-blue-600">
+                    Username: admin<br />
+                    Password: admin123
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
               <div className="flex">
@@ -65,18 +130,19 @@ const Login = ({ onLogin }) => {
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
                 />
               </div>
             </div>

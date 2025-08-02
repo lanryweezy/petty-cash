@@ -6,10 +6,12 @@ import RequestForm from './components/RequestForm.jsx';
 import ApprovalsDashboard from './components/ApprovalsDashboard.jsx';
 import ReceiptUpload from './components/ReceiptUpload.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
+import UserManagement from './components/UserManagement.jsx';
 import SMTPConfig from './components/SMTPConfig.jsx';
 import Login from './components/auth/Login.jsx';
 import ChangePassword from './components/auth/ChangePassword.jsx';
-import { login, initializeData } from './data/models.jsx';
+import FirstLogin from './components/auth/FirstLogin.jsx';
+import { login } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -20,12 +22,11 @@ function App() {
   const [activePage, setActivePage] = useState('dashboard');
 
   useEffect(() => {
-    initializeData();
-    const token = localStorage.getItem('token');
-    if (token) {
-      // In a real app, we'd verify the token with the backend
-      // For now, just assume it's valid
-      setUser({ token });
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      // Restore user session from localStorage
+      setUser({ ...JSON.parse(user), token });
     }
   }, []);
 
@@ -55,6 +56,8 @@ function App() {
         return <ReceiptUpload />;
       case 'admin':
         return <AdminPanel />;
+      case 'users':
+        return <UserManagement />;
       case 'smtp':
         return <SMTPConfig />;
       case 'change-password':
@@ -75,6 +78,11 @@ function App() {
   // If no user is logged in, show login screen
   if (!user) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // If user is logged in but needs to change password on first login
+  if (user.isFirstLogin) {
+    return <FirstLogin user={user} onPasswordChanged={setUser} />;
   }
 
   return (
