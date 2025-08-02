@@ -1,6 +1,4 @@
 import React, { useState, useContext } from 'react';
-import pool from '../../../server/db.js';
-import bcrypt from 'bcrypt';
 import { AuthContext } from '../../App';
 
 const ChangePassword = () => {
@@ -12,11 +10,24 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.id]);
-      await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', ['updated password', user.id]);
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to change password');
+      }
+
       setSuccess('Password updated successfully!');
+      setPassword(''); // Clear the form
     } catch (error) {
       setError(error.message);
     }

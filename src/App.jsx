@@ -9,7 +9,7 @@ import AdminPanel from './components/AdminPanel.jsx';
 import SMTPConfig from './components/SMTPConfig.jsx';
 import Login from './components/auth/Login.jsx';
 import ChangePassword from './components/auth/ChangePassword.jsx';
-import { login, initializeData } from './data/models.jsx';
+import { login } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -20,12 +20,11 @@ function App() {
   const [activePage, setActivePage] = useState('dashboard');
 
   useEffect(() => {
-    initializeData();
-    const token = localStorage.getItem('token');
-    if (token) {
-      // In a real app, we'd verify the token with the backend
-      // For now, just assume it's valid
-      setUser({ token });
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+      // Restore user session from localStorage
+      setUser({ ...JSON.parse(user), token });
     }
   }, []);
 
