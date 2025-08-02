@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showDevHelper, setShowDevHelper] = useState(true);
@@ -15,7 +15,7 @@ const Login = ({ onLogin }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -37,10 +37,10 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  const createDefaultUser = async () => {
+  const createDefaultAdmin = async () => {
     setCreatingUser(true);
     try {
-      const response = await fetch('/api/auth/create-default-user', {
+      const response = await fetch('/api/auth/create-default-admin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,15 +50,15 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
       
       if (response.ok) {
-        setEmail('admin@test.com');
-        setPassword('password123');
+        setUsername('admin');
+        setPassword('admin123');
         setShowDevHelper(false);
         setError('');
       } else {
-        setError(data.error || 'Failed to create default user');
+        setError(data.error || 'Failed to create default admin');
       }
     } catch (error) {
-      setError('Failed to create default user');
+      setError('Failed to create default admin');
     } finally {
       setCreatingUser(false);
     }
@@ -97,7 +97,7 @@ const Login = ({ onLogin }) => {
                   <div className="mt-3">
                     <button
                       type="button"
-                      onClick={createDefaultUser}
+                      onClick={createDefaultAdmin}
                       disabled={creatingUser}
                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                     >
@@ -105,8 +105,8 @@ const Login = ({ onLogin }) => {
                     </button>
                   </div>
                   <div className="mt-2 text-xs text-blue-600">
-                    Email: admin@test.com<br />
-                    Password: password123
+                    Username: admin<br />
+                    Password: admin123
                   </div>
                 </div>
               </div>
@@ -130,18 +130,19 @@ const Login = ({ onLogin }) => {
           
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
                 />
               </div>
             </div>

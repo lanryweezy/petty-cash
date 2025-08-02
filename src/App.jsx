@@ -6,9 +6,11 @@ import RequestForm from './components/RequestForm.jsx';
 import ApprovalsDashboard from './components/ApprovalsDashboard.jsx';
 import ReceiptUpload from './components/ReceiptUpload.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
+import UserManagement from './components/UserManagement.jsx';
 import SMTPConfig from './components/SMTPConfig.jsx';
 import Login from './components/auth/Login.jsx';
 import ChangePassword from './components/auth/ChangePassword.jsx';
+import FirstLogin from './components/auth/FirstLogin.jsx';
 import { login } from './data/models.jsx';
 
 // Create contexts for authentication and navigation
@@ -54,6 +56,8 @@ function App() {
         return <ReceiptUpload />;
       case 'admin':
         return <AdminPanel />;
+      case 'users':
+        return <UserManagement />;
       case 'smtp':
         return <SMTPConfig />;
       case 'change-password':
@@ -74,6 +78,11 @@ function App() {
   // If no user is logged in, show login screen
   if (!user) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // If user is logged in but needs to change password on first login
+  if (user.isFirstLogin) {
+    return <FirstLogin user={user} onPasswordChanged={setUser} />;
   }
 
   return (
