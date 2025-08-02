@@ -36,6 +36,42 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // Serve uploaded files from the 'uploads' directory
 app.use('/uploads', express.static(uploadsDir));
 
+// Development endpoint to create default user (remove in production)
+app.post('/api/auth/create-default-user', async (req, res) => {
+  try {
+    // Check if any users exist
+    const { rows: existingUsers } = await db.query('SELECT COUNT(*) as count FROM users');
+    
+    if (existingUsers[0].count > 0) {
+      return res.status(400).json({ error: 'Users already exist in the system' });
+    }
+    
+    // Create default user
+    const defaultEmail = 'admin@test.com';
+    const defaultPassword = 'password123';
+    const defaultName = 'Admin User';
+    
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    
+    const { rows } = await db.query(
+      'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
+      [defaultEmail, hashedPassword, defaultName]
+    );
+    
+    res.json({
+      message: 'Default user created successfully',
+      user: rows[0],
+      credentials: {
+        email: defaultEmail,
+        password: defaultPassword
+      }
+    });
+  } catch (error) {
+    console.error('Create default user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Authentication endpoints
 app.post('/api/auth/login', async (req, res) => {
   try {

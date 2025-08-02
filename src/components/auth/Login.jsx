@@ -4,6 +4,8 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showDevHelper, setShowDevHelper] = useState(true);
+  const [creatingUser, setCreatingUser] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +37,33 @@ const Login = ({ onLogin }) => {
     }
   };
 
+  const createDefaultUser = async () => {
+    setCreatingUser(true);
+    try {
+      const response = await fetch('/api/auth/create-default-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEmail('admin@test.com');
+        setPassword('password123');
+        setShowDevHelper(false);
+        setError('');
+      } else {
+        setError(data.error || 'Failed to create default user');
+      }
+    } catch (error) {
+      setError('Failed to create default user');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gray-50">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -53,6 +82,37 @@ const Login = ({ onLogin }) => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {showDevHelper && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-700">
+                    <strong>Development Mode:</strong> No users exist yet. Click below to create a default admin user.
+                  </p>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={createDefaultUser}
+                      disabled={creatingUser}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      {creatingUser ? 'Creating...' : 'Create Default Admin User'}
+                    </button>
+                  </div>
+                  <div className="mt-2 text-xs text-blue-600">
+                    Email: admin@test.com<br />
+                    Password: password123
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
               <div className="flex">
