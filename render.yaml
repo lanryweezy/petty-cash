@@ -1,11 +1,9 @@
 services:
   - type: web
-    name: petty-cash
-    env: node
-    buildCommand: pnpm install && pnpm run build
-    startCommand: node server.js
+    name: petty-cash-python
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: JWT_SECRET
+      - key: SECRET_KEY
         generateValue: true
