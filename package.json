@@ -2,7 +2,6 @@
   "name": "react-template",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "packageManager": "pnpm@10.10.0",
   "scripts": {
     "dev": "vite --host",
@@ -17,7 +16,7 @@
     "@mui/material": "^6.0.2",
     "@types/prop-types": "^15.7.14",
     "bcrypt": "^6.0.0",
-    "express": "^5.1.0",
+    "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
