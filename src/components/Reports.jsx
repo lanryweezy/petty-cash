@@ -1,78 +1,103 @@
-import React, { useState, useEffect, useContext } from 'react';
-
-import { CurrencyContext } from '../CurrencyContext.jsx';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../App';
 
 const Reports = () => {
-  const { currency } = useContext(CurrencyContext);
-  const [spendingByCategory, setSpendingByCategory] = useState([]);
-  const [spendingByUser, setSpendingByUser] = useState([]);
-  const [error, setError] = useState('');
+  const { user } = useContext(AuthContext);
+  const [activeReport, setActiveReport] = useState('overview');
 
-  useEffect(() => {
-    const fetchSpendingByCategory = async () => {
-      try {
-        const { rows } = await pool.query(`
-          SELECT r.purpose, SUM(receipts.amount) as amount
-          FROM receipts
-          JOIN requests r ON receipts.request_id = r.id
-          GROUP BY r.purpose
-        `);
-        setSpendingByCategory(rows.map(row => ({ name: row.purpose, amount: parseFloat(row.amount) })));
-      } catch (error) {
-        setError(error.message);
-      }
-    };
-
-    const fetchSpendingByUser = async () => {
-      try {
-        const { rows } = await pool.query(`
-          SELECT u.email, SUM(receipts.amount) as amount
-          FROM receipts
-          JOIN users u ON receipts.user_id = u.id
-          GROUP BY u.email
-        `);
-        setSpendingByUser(rows.map(row => ({ name: row.email, amount: parseFloat(row.amount) })));
-      } catch (error) {
-        setError(error.message);
-      }
-    };
-
-    fetchSpendingByCategory();
-    fetchSpendingByUser();
-  }, []);
+  const reports = [
+    { id: 'overview', name: 'Overview', description: 'General system statistics' },
+    { id: 'requests', name: 'Requests Report', description: 'Petty cash request analytics' },
+    { id: 'approvals', name: 'Approvals Report', description: 'Approval workflow analytics' },
+    { id: 'users', name: 'User Activity', description: 'User engagement metrics' }
+  ];
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Reports</h2>
-      {error && <p className="text-red-500">{error}</p>}
-
-      <div className="mb-8">
-        <h3 className="text-xl font-bold mb-4">Spending by Category</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={spendingByCategory}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `${currency?.symbol}${value}`} />
-            <Tooltip formatter={(value) => `${currency?.symbol}${value.toFixed(2)}`} />
-            <Legend />
-            <Bar dataKey="amount" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Reports</h1>
+      
+      {/* Report Navigation */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {reports.map((report) => (
+          <button
+            key={report.id}
+            onClick={() => setActiveReport(report.id)}
+            className={`p-4 rounded-lg border-2 text-left transition-colors ${
+              activeReport === report.id
+                ? 'border-indigo-500 bg-indigo-50'
+                : 'border-gray-200 bg-white hover:border-gray-300'
+            }`}
+          >
+            <h3 className="font-medium text-gray-900">{report.name}</h3>
+            <p className="text-sm text-gray-500 mt-1">{report.description}</p>
+          </button>
+        ))}
       </div>
 
-      <div>
-        <h3 className="text-xl font-bold mb-4">Spending by User</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={spendingByUser}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `${currency?.symbol}${value}`} />
-            <Tooltip formatter={(value) => `${currency?.symbol}${value.toFixed(2)}`} />
-            <Legend />
-            <Bar dataKey="amount" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
+      {/* Report Content */}
+      <div className="bg-white rounded-lg shadow p-6">
+        {activeReport === 'overview' && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">System Overview</h2>
+            <div className="border-l-4 border-blue-400 bg-blue-50 p-4">
+              <p className="text-blue-700">
+                <strong>Coming Soon:</strong> Advanced reporting features are in development.
+                Current data will be available through API endpoints once the reporting system is complete.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeReport === 'requests' && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Requests Report</h2>
+            <div className="border-l-4 border-green-400 bg-green-50 p-4">
+              <p className="text-green-700">
+                <strong>Planned Features:</strong>
+              </p>
+              <ul className="text-green-700 mt-2 space-y-1">
+                <li>• Total requests by period</li>
+                <li>• Average request amounts</li>
+                <li>• Request status breakdown</li>
+                <li>• Department/user analytics</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {activeReport === 'approvals' && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Approvals Report</h2>
+            <div className="border-l-4 border-yellow-400 bg-yellow-50 p-4">
+              <p className="text-yellow-700">
+                <strong>Planned Features:</strong>
+              </p>
+              <ul className="text-yellow-700 mt-2 space-y-1">
+                <li>• Approval response times</li>
+                <li>• Approver workload distribution</li>
+                <li>• Approval vs rejection rates</li>
+                <li>• Escalation patterns</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {activeReport === 'users' && (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">User Activity Report</h2>
+            <div className="border-l-4 border-purple-400 bg-purple-50 p-4">
+              <p className="text-purple-700">
+                <strong>Planned Features:</strong>
+              </p>
+              <ul className="text-purple-700 mt-2 space-y-1">
+                <li>• User login frequency</li>
+                <li>• Most active users</li>
+                <li>• Feature usage statistics</li>
+                <li>• Role-based activity metrics</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
