@@ -11,3 +11,13 @@ global.fetch = jest.fn(() =>
     json: () => Promise.resolve([]),
   })
 );
+
+jest.mock('recharts', () => {
+  const OriginalModule = jest.requireActual('recharts');
+  return {
+    ...OriginalModule,
+    ResponsiveContainer: ({ children }) => (
+      <div style={{ width: 800, height: 600 }}>{children}</div>
+    ),
+  };
+});

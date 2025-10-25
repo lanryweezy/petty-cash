@@ -1,15 +1,21 @@
-import React, { useState, useEffect, createContext } from 'react';
+import React, { useState, useEffect, createContext, Suspense, lazy } from 'react';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
-import Dashboard from './components/Dashboard.jsx';
-import RequestForm from './components/RequestForm.jsx';
-import ApprovalsDashboard from './components/ApprovalsDashboard.jsx';
-import ReceiptUpload from './components/ReceiptUpload.jsx';
-import AdminPanel from './components/AdminPanel.jsx';
-import SMTPConfig from './components/SMTPConfig.jsx';
-import Login from './components/auth/Login.jsx';
-import ChangePassword from './components/auth/ChangePassword.jsx';
 import { login, initializeData } from './data/models.jsx';
+
+// Lazy load the page components
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
+const RequestForm = lazy(() => import('./components/RequestForm.jsx'));
+const ApprovalsDashboard = lazy(() => import('./components/ApprovalsDashboard.jsx'));
+const ReceiptUpload = lazy(() => import('./components/ReceiptUpload.jsx'));
+const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
+const SMTPConfig = lazy(() => import('./components/SMTPConfig.jsx'));
+const Login = lazy(() => import('./components/auth/Login.jsx'));
+const ChangePassword = lazy(() => import('./components/auth/ChangePassword.jsx'));
+const Logs = lazy(() => import('./components/Logs.jsx'));
+const Reports = lazy(() => import('./components/Reports.jsx'));
+const Currencies = lazy(() => import('./components/Currencies.jsx'));
+const Roles = lazy(() => import('./components/Roles.jsx'));
 
 // Create contexts for authentication and navigation
 export const AuthContext = createContext(null);
@@ -74,7 +80,7 @@ function App() {
 
   // If no user is logged in, show login screen
   if (!user) {
-    return <Login onLogin={handleLogin} />;
+    return <Suspense fallback={<div>Loading...</div>}><Login onLogin={handleLogin} /></Suspense>;
   }
 
   return (
@@ -85,7 +91,9 @@ function App() {
           <div className="flex flex-1">
             <Sidebar />
             <main className="flex-1 p-6 overflow-auto">
-              {renderActivePage()}
+              <Suspense fallback={<div>Loading...</div>}>
+                {renderActivePage()}
+              </Suspense>
             </main>
           </div>
         </div>

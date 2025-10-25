@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../App';
+import React, { useEffect, useState } from 'react';
+// import { AuthContext } from '../App';
 import StatsCard from './StatsCard';
 import { 
   BarChart as RechartsBarChart,
@@ -13,13 +13,13 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line
+  // LineChart,
+  // Line
 } from 'recharts';
 import { getRequests, getReceipts } from '../data/models.jsx';
 
 const Dashboard = () => {
-  const { user } = useContext(AuthContext);
+  // const { user } = useContext(AuthContext);
   const [requests, setRequests] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [thisMonthSpent, setThisMonthSpent] = useState(0);

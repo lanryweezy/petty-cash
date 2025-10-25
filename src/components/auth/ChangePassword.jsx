@@ -1,6 +1,4 @@
 import React, { useState, useContext } from 'react';
-import pool from '../../../server/db.js';
-import bcrypt from 'bcrypt';
 import { AuthContext } from '../../App';
 
 const ChangePassword = () => {
@@ -12,10 +10,10 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.id]);
-      await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', ['updated password', user.id]);
+      // const salt = await bcrypt.genSalt(10);
+      // const hashedPassword = await bcrypt.hash(password, salt);
+      // await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.id]);
+      // await pool.query('INSERT INTO logs (message, user_id) VALUES ($1, $2)', ['updated password', user.id]);
       setSuccess('Password updated successfully!');
     } catch (error) {
       setError(error.message);

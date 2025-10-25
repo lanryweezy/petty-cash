@@ -1,5 +1,11 @@
 const API_URL = process.env.REACT_APP_API_URL;
 
+export const initializeData = () => {
+  // This is a placeholder for now. In a real app, this would
+  // make a request to the backend to get initial data.
+  return Promise.resolve();
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};

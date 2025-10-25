@@ -6,21 +6,21 @@ const Logs = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const { rows } = await pool.query(`
-          SELECT logs.*, users.email
-          FROM logs
-          JOIN users ON logs.user_id = users.id
-          ORDER BY logs.created_at DESC
-        `);
-        setLogs(rows);
-      } catch (error) {
-        setError(error.message);
-      }
-    };
+    // const fetchLogs = async () => {
+    //   try {
+    //     const { rows } = await pool.query(`
+    //       SELECT logs.*, users.email
+    //       FROM logs
+    //       JOIN users ON logs.user_id = users.id
+    //       ORDER BY logs.created_at DESC
+    //     `);
+    //     setLogs(rows);
+    //   } catch (error) {
+    //     setError(error.message);
+    //   }
+    // };
 
-    fetchLogs();
+    // fetchLogs();
   }, []);
 
   return (

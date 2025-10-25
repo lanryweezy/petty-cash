@@ -1,11 +1,11 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import Dashboard from './Dashboard.jsx';
 import { AuthContext } from '../App.jsx';
 import { CurrencyContext } from '../CurrencyContext.jsx';
 
 describe('Dashboard', () => {
-  it('renders the dashboard', () => {
+  it('renders the dashboard', async () => {
     const user = {
       name: 'Test User',
       role: 'admin',
@@ -27,6 +27,8 @@ describe('Dashboard', () => {
       </AuthContext.Provider>
     );
 
-    expect(screen.getByText('Petty Cash Dashboard')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Petty Cash Dashboard')).toBeInTheDocument();
+    });
   });
 });

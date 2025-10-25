@@ -41,14 +41,14 @@ const GaugeChart = ({ value = 75, min = 0, max = 100, title = "Performance" }) =
   ];
 
   const RADIAN = Math.PI / 180;
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, payload: { percent } }) => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
     return (
       <text x={x} y={y} fill="#888" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
-        {`${percentage.toFixed(0)}%`}
+        {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
   };

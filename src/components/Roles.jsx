@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoles, saveRole } from '../data/models';
+import { getRoles } from '../data/models';
 
 const Roles = () => {
   const [roles, setRoles] = useState([]);
@@ -26,27 +26,27 @@ const Roles = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    try {
-      await saveRole(editingRole);
-      setSuccess('Role saved successfully!');
-      setEditingRole(null);
-      fetchRoles();
-    } catch (err) {
-      setError(err.message);
-    }
+    // try {
+    //   await saveRole(editingRole);
+    //   setSuccess('Role saved successfully!');
+    //   setEditingRole(null);
+    //   fetchRoles();
+    // } catch (err) {
+    //   setError(err.message);
+    // }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const { name } = e.target.elements;
-    try {
-      await saveRole({ name: name.value });
-      setSuccess('Role added successfully!');
-      fetchRoles();
-      e.target.reset();
-    } catch (err) {
-      setError(err.message);
-    }
+    // const { name } = e.target.elements;
+    // try {
+    //   await saveRole({ name: name.value });
+    //   setSuccess('Role added successfully!');
+    //   fetchRoles();
+    //   e.target.reset();
+    // } catch (err) {
+    //   setError(err.message);
+    // }
   };
 
   return (

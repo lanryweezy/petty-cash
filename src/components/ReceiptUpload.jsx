@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../App';
 import { CurrencyContext } from '../CurrencyContext.jsx';
-import { getRequests, getReceipts, saveReceipt, sendEmailNotification, getUsers } from '../data/models';
+import { getRequests, getReceipts, sendEmailNotification, getUsers } from '../data/models';
 
 
 const ReceiptUpload = () => {
@@ -116,87 +116,87 @@ const ReceiptUpload = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    try {
-      // Validate form
-      if (!selectedRequestId) {
-        throw new Error('Please select a request');
-      }
+    // try {
+    //   // Validate form
+    //   if (!selectedRequestId) {
+    //     throw new Error('Please select a request');
+    //   }
       
-      if (!receiptFile) {
-        throw new Error('Please upload a receipt file');
-      }
+    //   if (!receiptFile) {
+    //     throw new Error('Please upload a receipt file');
+    //   }
       
-      if (!receiptData.amount || isNaN(parseFloat(receiptData.amount)) || parseFloat(receiptData.amount) <= 0) {
-        throw new Error('Please enter a valid amount');
-      }
+    //   if (!receiptData.amount || isNaN(parseFloat(receiptData.amount)) || parseFloat(receiptData.amount) <= 0) {
+    //     throw new Error('Please enter a valid amount');
+    //   }
       
-      if (!receiptData.merchant.trim()) {
-        throw new Error('Please enter a merchant name');
-      }
+    //   if (!receiptData.merchant.trim()) {
+    //     throw new Error('Please enter a merchant name');
+    //   }
       
-      // Upload file to the server
-      const formData = new FormData();
-      formData.append('receipt', receiptFile);
-      const uploadResponse = await fetch('/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      if (!uploadResponse.ok) {
-        throw new Error('File upload failed');
-      }
-      const uploadData = await uploadResponse.json();
+    //   // Upload file to the server
+    //   const formData = new FormData();
+    //   formData.append('receipt', receiptFile);
+    //   const uploadResponse = await fetch('/upload', {
+    //     method: 'POST',
+    //     body: formData,
+    //   });
+    //   if (!uploadResponse.ok) {
+    //     throw new Error('File upload failed');
+    //   }
+    //   const uploadData = await uploadResponse.json();
 
-      // Save receipt metadata to the database
-      await pool.query(
-        'INSERT INTO receipts (request_id, file_path, amount, merchant, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6)',
-        [
-          selectedRequestId,
-          uploadData.filePath,
-          parseFloat(receiptData.amount),
-          receiptData.merchant.trim(),
-          receiptData.notes.trim(),
-          user.id,
-        ]
-      );
+    //   // Save receipt metadata to the database
+    //   await pool.query(
+    //     'INSERT INTO receipts (request_id, file_path, amount, merchant, notes, user_id) VALUES ($1, $2, $3, $4, $5, $6)',
+    //     [
+    //       selectedRequestId,
+    //       uploadData.filePath,
+    //       parseFloat(receiptData.amount),
+    //       receiptData.merchant.trim(),
+    //       receiptData.notes.trim(),
+    //       user.id,
+    //     ]
+    //   );
       
-      // Notify relevant parties
-      const selectedRequest = requests.find(r => r.id === selectedRequestId);
-      const users = await getUsers();
-      const approver = users.find(u => u.id === selectedRequest?.approved_by);
+    //   // Notify relevant parties
+    //   const selectedRequest = requests.find(r => r.id === selectedRequestId);
+    //   const users = await getUsers();
+    //   const approver = users.find(u => u.id === selectedRequest?.approved_by);
       
-      if (approver) {
-        await sendEmailNotification(
-          approver.email,
-          'Receipt Uploaded for Approved Request',
-          `A receipt has been uploaded for the approved request:\n\nRequest: ${selectedRequest.purpose}\nAmount Requested: ${currency?.symbol}${selectedRequest.amount.toFixed(2)}\nReceipt Amount: ${currency?.symbol}${parseFloat(receiptData.amount).toFixed(2)}\nMerchant: ${receiptData.merchant}\nUploaded by: ${user.name}\n\n${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
-        );
-      }
+    //   if (approver) {
+    //     await sendEmailNotification(
+    //       approver.email,
+    //       'Receipt Uploaded for Approved Request',
+    //       `A receipt has been uploaded for the approved request:\n\nRequest: ${selectedRequest.purpose}\nAmount Requested: ${currency?.symbol}${selectedRequest.amount.toFixed(2)}\nReceipt Amount: ${currency?.symbol}${parseFloat(receiptData.amount).toFixed(2)}\nMerchant: ${receiptData.merchant}\nUploaded by: ${user.name}\n\n${receiptData.notes ? `Notes: ${receiptData.notes}` : ''}`
+    //     );
+    //   }
       
-      // Show success message and reset form
-      setSuccessMessage('Receipt uploaded successfully');
-      setSelectedRequestId('');
-      setReceiptFile(null);
-      setReceiptData({
-        amount: '',
-        merchant: '',
-        notes: ''
-      });
+    //   // Show success message and reset form
+    //   setSuccessMessage('Receipt uploaded successfully');
+    //   setSelectedRequestId('');
+    //   setReceiptFile(null);
+    //   setReceiptData({
+    //     amount: '',
+    //     merchant: '',
+    //     notes: ''
+    //   });
       
-      // Refresh the data
-      loadData();
+    //   // Refresh the data
+    //   loadData();
       
-      // Clear success message after a delay
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 3000);
-    } catch (error) {
-      setErrorMessage(error.message);
+    //   // Clear success message after a delay
+    //   setTimeout(() => {
+    //     setSuccessMessage('');
+    //   }, 3000);
+    // } catch (error) {
+    //   setErrorMessage(error.message);
       
-      // Clear error message after a delay
-      setTimeout(() => {
-        setErrorMessage('');
-      }, 3000);
-    }
+    //   // Clear error message after a delay
+    //   setTimeout(() => {
+    //     setErrorMessage('');
+    //   }, 3000);
+    // }
   };
   
   // Display filesize in a human-readable format
@@ -210,21 +210,21 @@ const ReceiptUpload = () => {
 
   useEffect(() => {
     const fetchReceipts = async () => {
-      try {
-        const { rows } = await pool.query(
-          `
-          SELECT receipts.*, requests.purpose, requests.amount AS request_amount
-          FROM receipts
-          JOIN requests ON receipts.request_id = requests.id
-          WHERE receipts.user_id = $1
-          ORDER BY receipts.created_at DESC
-        `,
-          [user.id]
-        );
-        setUserReceipts(rows);
-      } catch (error) {
-        setErrorMessage(error.message);
-      }
+      // try {
+      //   const { rows } = await pool.query(
+      //     `
+      //     SELECT receipts.*, requests.purpose, requests.amount AS request_amount
+      //     FROM receipts
+      //     JOIN requests ON receipts.request_id = requests.id
+      //     WHERE receipts.user_id = $1
+      //     ORDER BY receipts.created_at DESC
+      //   `,
+      //     [user.id]
+      //   );
+      //   setUserReceipts(rows);
+      // } catch (error) {
+      //   setErrorMessage(error.message);
+      // }
     };
 
     fetchReceipts();

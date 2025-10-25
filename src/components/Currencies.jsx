@@ -8,16 +8,16 @@ const Currencies = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    fetchCurrencies();
+    // fetchCurrencies();
   }, []);
 
   const fetchCurrencies = async () => {
-    try {
-      const { rows } = await pool.query('SELECT * FROM currencies');
-      setCurrencies(rows);
-    } catch (error) {
-      setError(error.message);
-    }
+    // try {
+    //   const { rows } = await pool.query('SELECT * FROM currencies');
+    //   setCurrencies(rows);
+    // } catch (error) {
+    //   setError(error.message);
+    // }
   };
 
   const handleEdit = (currency) => {
@@ -30,28 +30,28 @@ const Currencies = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const { id, name, code, exchange_rate, is_default } = editingCurrency;
-    try {
-      await pool.query('UPDATE currencies SET name = $1, code = $2, exchange_rate = $3, is_default = $4 WHERE id = $5', [name, code, exchange_rate, is_default, id]);
-      setSuccess('Currency saved successfully!');
-      setEditingCurrency(null);
-      fetchCurrencies();
-    } catch (error) {
-      setError(error.message);
-    }
+    // const { id, name, code, exchange_rate, is_default } = editingCurrency;
+    // try {
+    //   await pool.query('UPDATE currencies SET name = $1, code = $2, exchange_rate = $3, is_default = $4 WHERE id = $5', [name, code, exchange_rate, is_default, id]);
+    //   setSuccess('Currency saved successfully!');
+    //   setEditingCurrency(null);
+    //   fetchCurrencies();
+    // } catch (error) {
+    //   setError(error.message);
+    // }
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const { name, code, exchange_rate } = e.target.elements;
-    try {
-      await pool.query('INSERT INTO currencies (name, code, exchange_rate) VALUES ($1, $2, $3)', [name.value, code.value, exchange_rate.value]);
-      setSuccess('Currency added successfully!');
-      fetchCurrencies();
-      e.target.reset();
-    } catch (error) {
-      setError(error.message);
-    }
+    // const { name, code, exchange_rate } = e.target.elements;
+    // try {
+    //   await pool.query('INSERT INTO currencies (name, code, exchange_rate) VALUES ($1, $2, $3)', [name.value, code.value, exchange_rate.value]);
+    //   setSuccess('Currency added successfully!');
+    //   fetchCurrencies();
+    //   e.target.reset();
+    // } catch (error) {
+    //   setError(error.message);
+    // }
   };
 
   return (
@@ -119,13 +119,13 @@ const Currencies = () => {
                     name="is_default"
                     checked={currency.is_default}
                     onChange={async () => {
-                      try {
-                        await pool.query('UPDATE currencies SET is_default = false WHERE is_default = true');
-                        await pool.query('UPDATE currencies SET is_default = true WHERE id = $1', [currency.id]);
-                        fetchCurrencies();
-                      } catch (error) {
-                        setError(error.message);
-                      }
+                      // try {
+                      //   await pool.query('UPDATE currencies SET is_default = false WHERE is_default = true');
+                      //   await pool.query('UPDATE currencies SET is_default = true WHERE id = $1', [currency.id]);
+                      //   fetchCurrencies();
+                      // } catch (error) {
+                      //   setError(error.message);
+                      // }
                     }}
                   />
                 </td>

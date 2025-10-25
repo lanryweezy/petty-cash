@@ -25,74 +25,74 @@ const RequestForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSuccessMessage('');
-    setErrorMessage('');
+    // setIsSubmitting(true);
+    // setSuccessMessage('');
+    // setErrorMessage('');
 
-    try {
-      // Validate inputs
-      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-        throw new Error('Please enter a valid amount');
-      }
+    // try {
+    //   // Validate inputs
+    //   if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    //     throw new Error('Please enter a valid amount');
+    //   }
 
-      if (!purpose.trim()) {
-        throw new Error('Please enter a purpose for this request');
-      }
+    //   if (!purpose.trim()) {
+    //     throw new Error('Please enter a purpose for this request');
+    //   }
 
-      // Create request object
-      const request = {
-        userId: user.id,
-        amount: parseFloat(amount),
-        purpose: purpose.trim(),
-        description: description.trim(),
-        requesterName: user.name,
-        // Other fields like status, createdAt will be set in the saveRequest function
-      };
+    //   // Create request object
+    //   const request = {
+    //     userId: user.id,
+    //     amount: parseFloat(amount),
+    //     purpose: purpose.trim(),
+    //     description: description.trim(),
+    //     requesterName: user.name,
+    //     // Other fields like status, createdAt will be set in the saveRequest function
+    //   };
 
-      // Save the request
-      const savedRequest = saveRequest(request);
+    //   // Save the request
+    //   const savedRequest = saveRequest(request);
 
-      // Determine which approvers should be notified based on approval rules
-      const rules = getApprovalRules();
-      const amountValue = parseFloat(amount);
-      let notifiedApprovers = [];
+    //   // Determine which approvers should be notified based on approval rules
+    //   const rules = getApprovalRules();
+    //   const amountValue = parseFloat(amount);
+    //   let notifiedApprovers = [];
 
-      // Find applicable rules
-      for (const rule of rules) {
-        if (rule.isActive) {
-          if (rule.approveAll || amountValue <= rule.amountThreshold) {
-            const approver = approvers.find(a => a.id === rule.approverId);
-            if (approver && !notifiedApprovers.includes(approver.id)) {
-              notifiedApprovers.push(approver);
+    //   // Find applicable rules
+    //   for (const rule of rules) {
+    //     if (rule.isActive) {
+    //       if (rule.approveAll || amountValue <= rule.amountThreshold) {
+    //         const approver = approvers.find(a => a.id === rule.approverId);
+    //         if (approver && !notifiedApprovers.includes(approver.id)) {
+    //           notifiedApprovers.push(approver);
               
-              const mailOptions = {
-                to: approver.email,
-                subject: `New Petty Cash Request: ${purpose}`,
-                text: `A new petty cash request has been submitted:\n\nRequester: ${user.name}\nAmount: ${currency?.symbol}${amountValue.toFixed(2)}\nPurpose: ${purpose}\nDescription: ${description}\n\nPlease login to the Petty Cash system to approve or reject this request.`
-              };
+    //           const mailOptions = {
+    //             to: approver.email,
+    //             subject: `New Petty Cash Request: ${purpose}`,
+    //             text: `A new petty cash request has been submitted:\n\nRequester: ${user.name}\nAmount: ${currency?.symbol}${amountValue.toFixed(2)}\nPurpose: ${purpose}\nDescription: ${description}\n\nPlease login to the Petty Cash system to approve or reject this request.`
+    //           };
               
-            }
-          }
-        }
-      }
+    //         }
+    //       }
+    //     }
+    //   }
 
-      // Show success message
-      setSuccessMessage(`Your request has been submitted successfully. ${notifiedApprovers.length > 0 ? 'Approvers have been notified.' : ''}`);
+    //   // Show success message
+    //   setSuccessMessage(`Your request has been submitted successfully. ${notifiedApprovers.length > 0 ? 'Approvers have been notified.' : ''}`);
       
-      // Reset form
-      setAmount('');
-      setPurpose('');
-      setDescription('');
+    //   // Reset form
+    //   setAmount('');
+    //   setPurpose('');
+    //   setDescription('');
       
-      // Redirect to dashboard after a delay
-      setTimeout(() => {
-        setActivePage('dashboard');
-      }, 3000);
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    //   // Redirect to dashboard after a delay
+    //   setTimeout(() => {
+    //     setActivePage('dashboard');
+    //   }, 3000);
+    // } catch (error) {
+    //   setErrorMessage(error.message);
+    // } finally {
+    //   setIsSubmitting(false);
+    // }
   };
 
   return (

@@ -73,10 +73,10 @@ const ApprovalsDashboard = () => {
       await saveRequest(requestToUpdate);
       
       // Send email notification to requester
-      const requester = users[requestToUpdate.userId];
-      if (requester) {
+      // const requester = users[requestToUpdate.userId];
+      // if (requester) {
         
-      }
+      // }
       
       // Show success message
       setSuccessMessage(`Request has been ${requestToUpdate.status} successfully`);

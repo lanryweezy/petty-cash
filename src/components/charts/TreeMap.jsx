@@ -36,7 +36,7 @@ const data = [
 ];
 
 // Custom rendering for TreeMap to make it more visually appealing
-const CustomTreemap = ({ root, depth, x, y, width, height, index, colors, name, value }) => {
+const CustomTreemap = ({ root, depth }) => {
   return (
     <g>
       {root.children && root.children.map((node, i) => (
