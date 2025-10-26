@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-receipt"></i> Upload Receipt</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="receipt" class="form-label">Receipt File</label>
+                        <input type="file" class="form-control" id="receipt" name="receipt" 
+                               accept="image/*,.pdf" required>
+                        <div class="form-text">Accepted formats: JPG, PNG, PDF (max 5MB)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Brief description of the expense..." required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount ($)</label>
+                        <input type="number" class="form-control" id="amount" name="amount" 
+                               step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="request_id" class="form-label">Related Request (Optional)</label>
+                        <select class="form-select" id="request_id" name="request_id">
+                            <option value="">Select a request (optional)</option>
+                            {% for request in requests %}
+                            <option value="{{ request.id }}">
+                                {{ request.purpose }} - ${{ "%.2f"|format(request.amount) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Link this receipt to an approved request</div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Important:</strong> Ensure the receipt is clear and shows the amount, 
+                        date, and vendor information.
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Upload Receipt
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

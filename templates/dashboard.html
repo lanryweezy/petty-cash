@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-house"></i> Dashboard</h2>
+        <p class="text-muted">Welcome back, {{ session.name }}!</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> My Requests</h5>
+                <a href="{{ url_for('create_request') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus"></i> New Request
+                </a>
+            </div>
+            <div class="card-body">
+                {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Purpose</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Approved By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr>
+                                <td>{{ request.purpose }}</td>
+                                <td>${{ "%.2f"|format(request.amount) }}</td>
+                                <td>
+                                    {% if request.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ request.created_at[:10] }}</td>
+                                <td>{{ request.approved_by_name or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clipboard display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No requests yet. Create your first request!</p>
+                    <a href="{{ url_for('create_request') }}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Create Request
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-receipt"></i> Recent Receipts</h6>
+                <a href="{{ url_for('upload_receipt') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-upload"></i> Upload
+                </a>
+            </div>
+            <div class="card-body">
+                {% if receipts %}
+                {% for receipt in receipts %}
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                    <div>
+                        <small class="fw-bold">{{ receipt.description }}</small><br>
+                        <small class="text-muted">{{ receipt.purpose or 'General' }}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="fw-bold">${{ "%.2f"|format(receipt.amount) }}</small><br>
+                        <small class="text-muted">{{ receipt.created_at[:10] }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-receipt display-6 text-muted"></i>
+                    <p class="text-muted small mt-1">No receipts uploaded</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6><i class="bi bi-info-circle"></i> Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('create_request') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> New Request
+                    </a>
+                    <a href="{{ url_for('upload_receipt') }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-receipt"></i> Upload Receipt
+                    </a>
+                    {% if session.role in ['admin', 'approver'] %}
+                    <a href="{{ url_for('approvals') }}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-check-circle"></i> View Approvals
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
