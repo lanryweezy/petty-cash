@@ -4,6 +4,14 @@ import psycopg2
 from psycopg2.extras import DictCursor
 import os
 import sqlite3
+from datetime import datetime
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
 
 def get_db_connection():
     db_url = os.environ.get('DATABASE_URL')
@@ -57,5 +65,5 @@ if __name__ == '__main__':
         if not line:
             continue
         response = handle_request(line)
-        print(json.dumps(response))
+        print(json.dumps(response, cls=JSONEncoder))
         sys.stdout.flush()

@@ -1,3 +1,9 @@
+"""
+Petty Cash Management System
+This module implements the core Flask application, handling user authentication,
+request creation, receipt uploads (with base64 database storage for serverless support),
+and role-based approvals.
+"""
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
