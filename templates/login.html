@@ -1,90 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <i class="bi bi-cash-coin display-3 text-primary"></i>
-                    <h3 class="card-title">Petty Cash System</h3>
-                    <p class="text-muted">Login to manage cash requests</p>
-                </div>
+<div class="container">
+    <div class="row align-items-center justify-content-center" style="min-height: 80vh;">
+        <div class="col-md-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-cash-coin text-primary" style="font-size: 3.5rem;"></i>
+                <h2 class="mt-2 fw-bold">Petty Cash</h2>
+                <p class="text-muted">Sign in to manage your requests</p>
+            </div>
 
-                <div id="dev-helper" class="alert alert-info" style="display: none;">
-                    <h6><i class="bi bi-info-circle"></i> Development Mode</h6>
-                    <p class="small mb-2">No users exist yet. Click below to create default admin:</p>
-                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="createDefaultAdmin()">
-                        Create Default Admin
-                    </button>
-                    <div class="small mt-2 text-muted">
-                        Username: <strong>admin</strong><br>
-                        Password: <strong>admin123</strong>
-                    </div>
-                </div>
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <form method="POST">
+                        <div class="mb-4">
+                            <label for="username" class="form-label fw-semibold">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-0" id="username" name="username" placeholder="Enter username" required autofocus>
+                            </div>
+                        </div>
 
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-box-arrow-in-right"></i> Login
-                    </button>
-                </form>
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                                <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" placeholder="Enter password" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                                Sign In <i class="bi bi-box-arrow-in-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 text-muted small">
+                &copy; {{ session.get('year', '2024') }} Petty Cash System
             </div>
         </div>
     </div>
 </div>
-
-<script>
-function createDefaultAdmin() {
-    fetch('/create_default_admin', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.username) {
-            document.getElementById('username').value = data.username;
-            document.getElementById('password').value = data.password;
-            document.getElementById('dev-helper').style.display = 'none';
-            alert('Default admin created! Form has been filled with credentials.');
-        } else {
-            alert('Error: ' + (data.error || 'Failed to create admin'));
-        }
-    })
-    .catch(error => {
-        alert('Error: ' + error);
-    });
-}
-
-// Check if we should show the dev helper
-fetch('/create_default_admin', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    }
-})
-.then(response => response.json())
-.then(data => {
-    if (data.username) {
-        // Admin was created successfully, show helper
-        document.getElementById('dev-helper').style.display = 'block';
-    }
-})
-.catch(error => {
-    // If error is "Users already exist", don't show helper
-    // For any other error, we can show the helper
-    if (!error.message || !error.message.includes('exist')) {
-        document.getElementById('dev-helper').style.display = 'block';
-    }
-});
-</script>
 {% endblock %}

@@ -4,16 +4,28 @@
 <div class="row">
     <div class="col-md-8 mx-auto">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-plus-circle"></i> Create New Request</h5>
+            <div class="card-header bg-transparent pt-4 pb-0 border-0">
+                <h4 class="fw-bold mb-0"><i class="bi bi-plus-circle-fill text-primary me-2"></i> Create New Request</h4>
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="mb-3">
-                        <label for="purpose" class="form-label">Purpose</label>
-                        <input type="text" class="form-control" id="purpose" name="purpose" 
-                               placeholder="e.g., Office supplies, Travel expenses, etc." required>
-                    </div>
+
+    <div class="mb-3 d-flex align-items-end gap-2">
+        <div class="flex-grow-1">
+            <label for="purpose" class="form-label">Purpose</label>
+            <input type="text" class="form-control" id="purpose" name="purpose" placeholder="e.g., Office supplies, Travel expenses, etc." required>
+        </div>
+        <button type="button" class="btn btn-outline-info" id="ai-categorize-btn">
+            <i class="bi bi-magic"></i> Auto-Categorize
+        </button>
+    </div>
+
+    <div class="mb-3" id="category-result" style="display: none;">
+        <div class="alert alert-info py-2 mb-0">
+            <strong>AI Category:</strong> <span id="category-text"></span>
+        </div>
+    </div>
+
                     
                     <div class="mb-3">
                         <label for="amount" class="form-label">Amount ($)</label>
@@ -28,7 +40,7 @@
                     </div>
                     
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
                             <i class="bi bi-send"></i> Submit Request
                         </button>
                         <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
@@ -40,4 +52,42 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.getElementById('ai-categorize-btn').addEventListener('click', async function() {
+        const purpose = document.getElementById('purpose').value;
+        if (!purpose) {
+            alert('Please enter a purpose first.');
+            return;
+        }
+
+        const btn = this;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Thinking...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/ai/categorize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ purpose: purpose })
+            });
+
+            const data = await response.json();
+
+            document.getElementById('category-result').style.display = 'block';
+            document.getElementById('category-text').textContent = data.category + ' (Confidence: ' + (data.confidence * 100) + '%)';
+
+            // Optionally auto-fill a category field if we had one
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to categorize.');
+        } finally {
+            btn.innerHTML = '<i class="bi bi-magic"></i> Auto-Categorize';
+            btn.disabled = false;
+        }
+    });
+</script>
 {% endblock %}
